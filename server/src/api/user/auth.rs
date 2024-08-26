@@ -1,8 +1,9 @@
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::managers::user_manager::{self, get_user, User};
-use crate::datatypes::error::definition::{Result, ApiErrors};
+use crate::managers::invite_manager;
+use crate::managers::user_manager::{self, delete_user, get_user, User};
+use crate::datatypes::error::definition::{ApiErrors, Result, UserManagerErrors};
 use crate::utils::jwt::{gen_token, get_timestamp, get_token, passes, ActiveToken, RefreshToken, TimeOffsets};
 
 fn gen_refresh_token(u: &User) -> String {
@@ -27,7 +28,7 @@ pub fn login(input: Json<UserLogin>) -> Result<String> {
         return Err(ApiErrors::WrongCredentialsProvided.into())
     }
 
-    Ok(gen_refresh_token(&user))
+    Ok(gen_refresh_token(&user).into())
 }
 
 #[derive(Validate, Serialize, Deserialize)]
@@ -38,14 +39,20 @@ pub struct UserRegister {
     password: String,
     #[validate(length(min = 5, max = 20, message = "must be between 5-20 characters"))]
     name: String,
+    #[validate(length(min = 5, max = 20, message = "must be between 5-20 characters"))]
+    invite: String
 }
 
 #[post("/register", data = "<input>")]
 pub fn register(input: Json<UserRegister>) -> Result<String> { 
     input.validate()?;
-    let user = user_manager::insert_user(&input.name, &input.email, &user_manager::hash_password(&input.password).unwrap(), 0)?;
-    
-    Ok(gen_refresh_token(&user))
+    let invite = invite_manager::get_invite(&input.invite)?;
+
+    invite.is_valid_err()?;
+
+    let user = user_manager::insert_user(&input.name, &input.email, &user_manager::hash_password(&input.password).unwrap(), 0, &input.invite)?;
+    invite_manager::subtract_from_invite(&invite.id)?;
+    Ok(gen_refresh_token(&user).into())
 }
 
 #[derive(Validate, Serialize, Deserialize)]
@@ -76,5 +83,18 @@ pub fn refresh(input: Json<RefreshTokenData>) -> Result<String> {
         token_type: "active".to_owned()
     };
 
-    Ok(gen_token::<ActiveToken>(&token_object))
+    Ok(gen_token::<ActiveToken>(&token_object).into())
+}
+
+#[delete("/user/<id>")]
+pub fn delete(id: u16, token: ActiveToken) -> Result<()> { 
+    if id != token.uid && !token.get_perms().has(&user_manager::UserPermissions::ManageUsers) {
+        return Err(ApiErrors::MissesPermission(user_manager::UserPermissions::ManageUsers).into())
+    }
+    let r = delete_user(id)?;
+    if r == 1 {
+        Ok(().into())
+    } else {
+        return Err(UserManagerErrors::NotFound(id.to_string()).into())
+    }
 }

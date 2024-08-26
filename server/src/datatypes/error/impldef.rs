@@ -1,11 +1,17 @@
-use rocket::{http::{ContentType, Status}, response::Responder, Response};
+use rocket::{http::{ContentType, Status}, response::Responder, serde::json::Json, Response};
 use serde::Serialize;
 
-use super::definition::{ApiErrors, Error, UserManagerErrors};
+use super::definition::{ApiErrors, ApiSuccessResponse, Error, InviteManagerErrors, UserManagerErrors};
 
 impl From<UserManagerErrors> for Error {
     fn from(value: UserManagerErrors) -> Self {
         Error::UserErr(value)
+    }
+}
+
+impl From<InviteManagerErrors> for Error {
+    fn from(value: InviteManagerErrors) -> Self {
+        Error::InviteErr(value)
     }
 }
 
@@ -23,8 +29,13 @@ fn get_status(e: &Error) -> Status {
         },
 
         Error::ApiError(e) => match e {
-            ApiErrors::WrongCredentialsProvided => Status::Unauthorized,
-            ApiErrors::WrongTokenTypeProvided(_, _) => Status::BadRequest
+            ApiErrors::WrongCredentialsProvided | ApiErrors::Missing | ApiErrors::MissesPermission(_) => Status::Unauthorized,
+            ApiErrors::WrongTokenTypeProvided(_, _) | ApiErrors::Invalid => Status::BadRequest,
+        },
+
+        Error::InviteErr(e) => match e {
+            InviteManagerErrors::NotFound(_) => Status::NotFound,
+            InviteManagerErrors::Deplated | InviteManagerErrors::Expired => Status::Gone
         },
 
         Error::Database(_e) => Status::InternalServerError,
@@ -63,5 +74,26 @@ impl<'r> Responder<'r, 'static> for Error {
             .status(code)
             .sized_body(res_data.len(), std::io::Cursor::new(res_data))
             .ok()
+    }
+}
+
+impl<T: Serialize> From<T> for ApiSuccessResponse<T> {
+    fn from(value: T) -> Self {
+        ApiSuccessResponse {
+            ok: true,
+            code: Status::Ok,
+            data: value
+        }
+    }
+}
+
+impl<'r, T: Serialize> Responder<'r, 'static> for ApiSuccessResponse<T> {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
+        let res = serde_json::to_string::<ApiSuccessResponse<T>>(&self).expect("hello");
+
+        Response::build()
+        .status(Status::Ok)
+        .sized_body(res.len(), std::io::Cursor::new(res))
+        .ok()
     }
 }

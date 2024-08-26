@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::db;
 use crate::datatypes::error::definition::{ Error, UserManagerErrors };
 
@@ -11,11 +13,25 @@ use argon2::{
 
 
 // CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0)
+#[derive(Debug)]
 pub enum UserPermissions {
     Administrator = 1 << 0,
-    GenerateInvite = 1 << 1,
-    PrivateContent = 1 << 2,
-    ManageContent = 1 << 3
+    ManageUsers = 1 << 1,
+    ManageContent = 1 << 2,
+    ManageEncoding = 1 << 3
+}
+
+impl Display for UserPermissions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let as_str = match self {
+            UserPermissions::Administrator => "Administrator",
+            UserPermissions::ManageUsers => "Manage Users",
+            UserPermissions::ManageContent => "Manage Content",
+            UserPermissions::ManageEncoding => "Manage Encoding"
+        };
+
+        write!(f, "{}", as_str)
+    }
 }
 
 pub struct PermissionsResolver {
@@ -41,7 +57,8 @@ pub struct User {
     pub email:      String,
     pub name:       String,
     pub password:   String,
-    pub flags:      PermissionsResolver
+    pub flags:      PermissionsResolver,
+    pub used_invite: String
 }
 
 /// gets a user with a specified ID. Will throw NotFound if no user was found
@@ -55,7 +72,8 @@ pub fn get_user(user_email: &str) -> Result<User, Error> {
             email:      f.get(1)?,
             name:       f.get(2)?,
             password:   f.get(3)?,
-            flags:      PermissionsResolver { int_rep: f.get(4)? }
+            flags:      PermissionsResolver { int_rep: f.get(4)? },
+            used_invite: f.get(5)?
          })
      }) {
         Ok(d) => Ok(d),
@@ -83,7 +101,7 @@ pub fn compare_password(plain_password: &str, hashed_password: &str) -> bool {
 }
 
 /// Inserts a user to the database. The password should already be hashed when put into this function
-pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result<User, Error> {
+pub fn insert_user(name: &str, email: &str, password: &str, flags: u8, invite: &str) -> Result<User, Error> {
 
     // TODO: move restraints into some central place lol. Maybe config file?
     if name.len() > 50 {
@@ -91,7 +109,7 @@ pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result
     }
 
     let db = db::get_connection()?;
-    db.execute("INSERT INTO users (name, password, flags, email) VALUES (?1, ?2, ?3, ?4)", ( name, password, flags, email ))?;
+    db.execute("INSERT INTO users (name, password, flags, email, invite_used) VALUES (?1, ?2, ?3, ?4, ?5)", ( name, password, flags, email, invite ))?;
     
     Ok(
         User {
@@ -99,7 +117,8 @@ pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result
             email:      email.to_string(),
             name:       name.to_string(),
             password:   password.to_string(),
-            flags:      PermissionsResolver { int_rep: flags }
+            flags:      PermissionsResolver { int_rep: flags },
+            used_invite: invite.to_string()
         }
     )
 }
@@ -119,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_create_user() {
-        let result = insert_user("Bob Test", "bob@testing.app", "hunter1", 0).expect("could not create test user");
+        let result = insert_user("Bob Test", "bob@testing.app", "hunter1", 0, "hello").expect("could not create test user");
         println!("Test user created!");
 
         let get_user = get_user(&result.email).expect("could not get test user");

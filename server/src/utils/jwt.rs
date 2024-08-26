@@ -1,11 +1,16 @@
+use rocket::request::{ Outcome, Request, FromRequest };
+use rocket::http::Status;
 use serde::{ de::DeserializeOwned, Deserialize, Serialize };
 use jsonwebtoken::{ encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey };
 use std::time::{ SystemTime, UNIX_EPOCH };
 
+use crate::datatypes::error::definition::ApiErrors;
+use crate::managers::user_manager::PermissionsResolver;
+
 /* User JWT struct */
 #[ derive(Serialize, Deserialize) ]
 pub struct ActiveToken {
-    pub exp: u128, /* when token expires */
+    pub exp: u64, /* when token expires */
     pub sub: String, /* subject (email) */
     /* okapi specific properties */
     pub uid: u16, /* User id */
@@ -13,33 +18,40 @@ pub struct ActiveToken {
     pub token_type: String
 }
 
+impl ActiveToken {
+    pub fn get_perms(&self) -> PermissionsResolver {
+        PermissionsResolver { int_rep: self.permissions }
+    }
+}
+
 /* User JWT struct */
 #[ derive(Serialize, Deserialize) ]
 pub struct RefreshToken {
-    pub exp: u128, /* when token expires */
+    pub exp: u64, /* when token expires */
     pub sub: String, /* subject (email) */
     pub token_type: String
 }
 
 pub enum TimeOffsets {
-    Minute = 1000 * 60,
-    FiveMinutes = 1000 * 60 * 5,
-    Hour = 1000 * 60 * 60,
-    Day = 1000 * 60 * 60 * 24,
-    Week = 1000 * 60 * 60 * 24 * 7,
-    Month = 1000 * 60 * 60 * 24 * 30,
-    HalfYear = 1000 * 60 * 60 * 24 * 30 * 6,
+    Minute = 60,
+    FiveMinutes = 60 * 5,
+    Hour = 60 * 60,
+    Day = 60 * 60 * 24,
+    Week = 60 * 60 * 24 * 7,
+    Month = 60 * 60 * 24 * 30,
+    HalfYear = 60 * 60 * 24 * 30 * 6,
 }
 
-impl From<TimeOffsets> for u128 {
+
+impl From<TimeOffsets> for u64 {
     fn from(value: TimeOffsets) -> Self {
-        value as u128
+        value as u64
     }
 }
 
-pub fn get_timestamp(offset: u128) -> u128 {
+pub fn get_timestamp(offset: u64) -> u64 {
     //1000 * 60 * 60 * 24 * 30 * 6
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() + offset
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + offset
 }
 
 pub fn gen_token<T: Serialize>(user: &T) -> String {
@@ -55,5 +67,27 @@ pub fn passes<T: DeserializeOwned>(token: String) -> bool {
     match get_token::<T>(token) {
         Ok(_) => true,
         Err(_) => false
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ActiveToken {
+    type Error = ApiErrors;
+
+    async fn from_request( req: &'r Request<'_> ) -> Outcome<Self, Self::Error> {
+        let token = req.headers().get_one("token");
+        match token {
+            Some(token) => {
+                let t = match get_token::<ActiveToken>(token.to_string()) {
+                    Ok(t) => match t.token_type.as_str() {
+                        "active" => t,
+                        _ => return Outcome::Error((Status::Unauthorized, ApiErrors::WrongTokenTypeProvided(t.token_type, "active".to_owned())))
+                    },
+                    Err(_e) => return Outcome::Error((Status::Unauthorized, ApiErrors::Invalid))
+                };
+                Outcome::Success(t)
+            }
+            None => Outcome::Error((Status::Unauthorized, ApiErrors::Missing))
+        }
     }
 }
