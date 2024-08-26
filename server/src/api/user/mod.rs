@@ -1,6 +1,6 @@
 use rocket::Route;
-mod login;
+mod auth;
 
 pub fn routes() -> Vec<Route>  {
-    routes![login::login]
+    routes![auth::login, auth::register, auth::refresh]
 }

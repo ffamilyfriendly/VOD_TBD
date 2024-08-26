@@ -1,4 +1,6 @@
 use super::db;
+use crate::datatypes::error::definition::{ Error, UserManagerErrors };
+
 use argon2::{
     password_hash::{
         rand_core::OsRng,
@@ -6,6 +8,7 @@ use argon2::{
     },
     Argon2
 };
+
 
 // CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0)
 pub enum UserPermissions {
@@ -16,7 +19,7 @@ pub enum UserPermissions {
 }
 
 pub struct PermissionsResolver {
-    int_rep: u8
+    pub int_rep: u8
 }
 
 impl PermissionsResolver {
@@ -41,23 +44,8 @@ pub struct User {
     pub flags:      PermissionsResolver
 }
 
-#[derive(Debug)]
-pub enum ManagerErrors {
-    NotFound,
-    ValidationError
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum UserErrors {
-    #[error(transparent)]
-    Database(#[from] rusqlite::Error),
-
-    #[error("Error")]
-    UserErr(ManagerErrors)
-}
-
 /// gets a user with a specified ID. Will throw NotFound if no user was found
-pub fn get_user(user_email: &str) -> Result<User, UserErrors> {
+pub fn get_user(user_email: &str) -> Result<User, Error> {
     let db = db::get_connection()?;
 
     let mut stmt = db.prepare("SELECT * FROM users WHERE email = ?")?;
@@ -73,9 +61,9 @@ pub fn get_user(user_email: &str) -> Result<User, UserErrors> {
         Ok(d) => Ok(d),
         Err(e) => {
             if e == rusqlite::Error::QueryReturnedNoRows {
-                return Err(UserErrors::UserErr(ManagerErrors::NotFound))
+                return Err(UserManagerErrors::NotFound(user_email.to_string()).into())
             }
-            Err(UserErrors::Database(e))
+            Err(e.into())
         }
      }
 }
@@ -95,11 +83,11 @@ pub fn compare_password(plain_password: &str, hashed_password: &str) -> bool {
 }
 
 /// Inserts a user to the database. The password should already be hashed when put into this function
-pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result<User, UserErrors> {
+pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result<User, Error> {
 
     // TODO: move restraints into some central place lol. Maybe config file?
     if name.len() > 50 {
-        return Err(UserErrors::UserErr(ManagerErrors::ValidationError))
+        return Err(UserManagerErrors::ValidationError.into())
     }
 
     let db = db::get_connection()?;
@@ -117,7 +105,7 @@ pub fn insert_user(name: &str, email: &str, password: &str, flags: u8) -> Result
 }
 
 /// Deletes the specified user. Will return a usize 1 if a user was found and deleted and 0 is no user was deleted due to not existing
-pub fn delete_user(id: u16) -> Result<usize, UserErrors> {
+pub fn delete_user(id: u16) -> Result<usize, Error> {
     let db = db::get_connection()?;
     match db.execute("DELETE FROM users WHERE id = ?", [id]) {
         Ok(size) => Ok(size),

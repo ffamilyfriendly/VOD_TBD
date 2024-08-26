@@ -9,9 +9,13 @@ edition = "2021"
 rocket = { version = "0.5.1", features = ["secrets", "json"] }
 rusqlite = { version = "0.32.0", features = ["bundled"] }
 thiserror = "1.0.63"
-argon2 = "0.5.3"
 
 # Validation / json
 serde_json = "1.0.57"
 serde = { version = "1.0.115", features = ["derive"] }
 validator = { version = "0.16", features = ["derive"] }
+
+# Auth
+argon2 = "0.5.3"
+rand_core = { version = "0.6", features = ["std"] }
+jsonwebtoken = "7"
