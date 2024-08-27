@@ -2,7 +2,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use crate::managers::invite_manager;
-use crate::managers::user_manager::{self, delete_user, get_user, User};
+use crate::managers::user_manager::{self, delete_user, get_user, User, UserPermissions};
 use crate::datatypes::error::definition::{ApiErrors, Result, UserManagerErrors};
 use crate::utils::jwt::{gen_token, get_timestamp, get_token, passes, ActiveToken, RefreshToken, TimeOffsets};
 
@@ -49,8 +49,13 @@ pub fn register(input: Json<UserRegister>) -> Result<String> {
     let invite = invite_manager::get_invite(&input.invite)?;
 
     invite.is_valid_err()?;
+    let mut flags = 0;
 
-    let user = user_manager::insert_user(&input.name, &input.email, &user_manager::hash_password(&input.password).unwrap(), 0, &input.invite)?;
+    if invite.id == "first_time_setup" {
+        flags = UserPermissions::Administrator as u8;
+    }
+
+    let user = user_manager::insert_user(&input.name, &input.email, &user_manager::hash_password(&input.password).unwrap(), flags, &input.invite)?;
     invite_manager::subtract_from_invite(&invite.id)?;
     Ok(gen_refresh_token(&user).into())
 }
@@ -91,10 +96,16 @@ pub fn delete(id: u16, token: ActiveToken) -> Result<()> {
     if id != token.uid && !token.get_perms().has(&user_manager::UserPermissions::ManageUsers) {
         return Err(ApiErrors::MissesPermission(user_manager::UserPermissions::ManageUsers).into())
     }
+
     let r = delete_user(id)?;
     if r == 1 {
         Ok(().into())
     } else {
         return Err(UserManagerErrors::NotFound(id.to_string()).into())
     }
+}
+
+#[get("/user/@me")]
+pub fn get_current_user(token: ActiveToken) -> Result<User> {
+    Ok(user_manager::get_user(&token.sub)?.into())
 }

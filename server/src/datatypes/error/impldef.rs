@@ -1,4 +1,4 @@
-use rocket::{http::{ContentType, Status}, response::Responder, serde::json::Json, Response};
+use rocket::{http::{ContentType, Status}, response::Responder, Response};
 use serde::Serialize;
 
 use super::definition::{ApiErrors, ApiSuccessResponse, Error, InviteManagerErrors, UserManagerErrors};
@@ -88,7 +88,7 @@ impl<T: Serialize> From<T> for ApiSuccessResponse<T> {
 }
 
 impl<'r, T: Serialize> Responder<'r, 'static> for ApiSuccessResponse<T> {
-    fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
+    fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
         let res = serde_json::to_string::<ApiSuccessResponse<T>>(&self).expect("hello");
 
         Response::build()

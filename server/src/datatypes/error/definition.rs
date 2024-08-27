@@ -1,8 +1,8 @@
-use rocket::{http::Status, serde::json::Json};
+use rocket::http::Status;
 use serde::{Deserialize, Serialize};
 use validator::ValidationErrors;
 
-use crate::managers::{invite_manager::Invite, user_manager::UserPermissions};
+use crate::managers::user_manager::UserPermissions;
 
 #[derive(thiserror::Error, Debug)]
 pub enum UserManagerErrors {

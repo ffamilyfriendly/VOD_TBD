@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use super::db;
-use crate::datatypes::error::definition::{ Error, UserManagerErrors };
+use crate::datatypes::error::definition::{ ApiErrors, Error, UserManagerErrors };
 
 use argon2::{
     password_hash::{
@@ -10,10 +10,11 @@ use argon2::{
     },
     Argon2
 };
+use serde::Serialize;
 
 
 // CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UserPermissions {
     Administrator = 1 << 0,
     ManageUsers = 1 << 1,
@@ -34,6 +35,7 @@ impl Display for UserPermissions {
     }
 }
 
+#[derive(serde::Serialize)]
 pub struct PermissionsResolver {
     pub int_rep: u8
 }
@@ -50,8 +52,16 @@ impl PermissionsResolver {
     pub fn any(&self, p: &[UserPermissions]) -> bool {
         p.iter().any(|flag| self.has(flag))
     }
+
+    pub fn has_or_err(&self, p: &UserPermissions) -> Result<(), ApiErrors> {
+        if !self.has(p) {
+            return Err(ApiErrors::MissesPermission(p.clone()))
+        }
+        Ok(())
+    }
 }
 
+#[derive(Serialize)]
 pub struct User {
     pub id:         u16,
     pub email:      String,
