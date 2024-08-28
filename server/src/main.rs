@@ -9,6 +9,7 @@ use std::u64::MAX;
 
 use api::routes;
 use managers::{db, invite_manager::{create_invite, get_invite}};
+use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
 #[launch]
 fn rocket() -> _ {
@@ -25,6 +26,16 @@ fn rocket() -> _ {
     for route in routes() {
         rocket = rocket.mount(route.base, route.routes);
     }
+
+    let cors = rocket_cors::CorsOptions {
+        allowed_origins: AllowedOrigins::all(),
+        allowed_headers: AllowedHeaders::some(&["token", "Accept"]),
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors().unwrap();
+
+    rocket = rocket.attach(cors);
 
     rocket
 }
