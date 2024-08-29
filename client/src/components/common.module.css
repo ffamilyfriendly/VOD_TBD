@@ -1,0 +1,14 @@
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.center_not_inline {
+  width: 100%;
+  height: 100%;
+}
+
+.center_fill {
+  height: 100vh;
+}

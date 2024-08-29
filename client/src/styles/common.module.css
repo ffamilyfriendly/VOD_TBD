@@ -1,0 +1,52 @@
+.surface {
+  background-color: rgb(var(--color-surface-800));
+  color: rgb(var(--on-surface));
+  outline: 1px solid rgb(var(--color-surface-50) / 0.1);
+}
+
+/*
+    sm: cs.br_sm,
+    md: cs.br_md,
+    lg: cs.br_lg,
+*/
+
+.br_sm {
+  border-radius: 0.2rem;
+}
+
+.br_md {
+  border-radius: 0.5rem;
+}
+
+.br_lg {
+  border-radius: 0.75rem;
+}
+
+.pad_sm {
+  padding: 0.2rem;
+}
+
+.pad_md {
+  padding: 0.5rem;
+}
+
+.pad_lg {
+  padding: 0.75rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap_sm {
+  gap: 0.2rem;
+}
+
+.gap_md {
+  gap: 0.2rem;
+}
+
+.gap_lg {
+  gap: 0.75rem;
+}

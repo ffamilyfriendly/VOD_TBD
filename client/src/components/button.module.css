@@ -1,0 +1,20 @@
+.button {
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 1em;
+}
+
+.wide {
+  width: 100%;
+}
+
+.primary {
+  background-color: rgb(var(--color-primary-500));
+  color: rgb(var(--on-primary));
+}
+
+.secondary {
+  background-color: rgb(var(--color-secondary-500));
+  color: rgb(var(--on-secondary));
+}

@@ -1,77 +1,16 @@
-const API_PATH = "http://127.0.0.1:8000";
+import { I_HttpOptions, t_http_get } from "./http";
 
-interface I_HttpOptions {
-  data?: Object;
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  headers?: [string, string][];
-}
-
-interface I_FetchBody {
-  method: string;
-  body?: string;
-  headers?: [string, string][];
-}
-
-interface I_BaseApiResponse {
-  ok: boolean;
-  code: number;
-}
-
-interface I_SuccessResponse<T> extends I_BaseApiResponse {
-  ok: true;
-  data: T;
-}
-
-interface I_ErrorResponse extends I_BaseApiResponse {
-  ok: false;
-  data: {
-    message: string;
-  };
-}
-
-type ApiResponse<T> = I_SuccessResponse<T> | I_ErrorResponse;
+export const API_PATH = "http://127.0.0.1:8000";
 
 export type Result<T, E = Error> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
-function http_get(
-  route: `/${string}`,
-  options: I_HttpOptions = { method: "GET" }
-): Promise<Result<Response>> {
-  return new Promise((resolve, reject) => {
-    const fetch_options: I_FetchBody = { method: options.method };
-
-    if (options.data) fetch_options.body = JSON.stringify(options.data);
-    if (options.headers) fetch_options.headers = options.headers;
-
-    fetch(`${API_PATH}${route}`, fetch_options)
-      .then((r) => {
-        return resolve({ ok: true, value: r });
-      })
-      .catch((e) => {
-        return resolve({ ok: false, error: e });
-      });
-  });
-}
-
-async function t_http_get<T>(
-  route: `/${string}`,
-  options: I_HttpOptions = { method: "GET" }
-): Promise<Result<ApiResponse<T>>> {
-  const r = await http_get(route, options);
-  if (r.ok) {
-    return Ok(await r.value.json());
-  } else {
-    return Err(r.error);
-  }
-}
-
-function Ok<T>(obj: T): Result<T> {
+export function Ok<T>(obj: T): Result<T> {
   return { ok: true, value: obj };
 }
 
-function Err<T extends Error, Y>(err: T): Result<Y> {
+export function Err<T extends Error, Y>(err: T): Result<Y> {
   return { ok: false, error: err };
 }
 
@@ -91,18 +30,10 @@ function decodeToken<T extends { exp: number }>(token: string): Result<T> {
   }
 }
 
-/* 
+if (window) {
 
-pub struct User {
-    pub id:         u16,
-    pub email:      String,
-    pub name:       String,
-    pub password:   String,
-    pub flags:      PermissionsResolver,
-    pub used_invite: String
+  window.prototype.gen_hue = function generate_hue() {};
 }
-
-*/
 
 interface I_User {
   id: number;
