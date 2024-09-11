@@ -32,7 +32,13 @@ export function Center({ children, inline, ...props }: I_Center) {
   );
 }
 
-export type theme = "primary" | "secondary" | "surface" | "error" | "warning";
+export type theme =
+  | "primary"
+  | "secondary"
+  | "surface"
+  | "error"
+  | "warning"
+  | "bordered";
 
 export const STYLE = {
   THEME: {

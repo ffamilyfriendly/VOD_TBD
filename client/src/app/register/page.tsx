@@ -1,5 +1,5 @@
 "use client";
-import Button, { SubmitButton } from "@/components/button";
+import { SubmitButton } from "@/components/button";
 import { Center, STYLE, styles } from "@/components/common";
 import cs from "@/styles/common.module.css";
 import Input from "@/components/input";
@@ -10,24 +10,20 @@ import Information from "@/components/Information";
 import AuthStyle from "@/styles/auth.module.css";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function Login() {
+export default function Register() {
   const client = useContext(ClientContext);
   const [error, setError] = useState<Error>();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  function redirectOnwards() {
-    const redir = searchParams.get("then");
-    router.push(redir || "/");
-  }
-
   function handleLogin(e: FormEvent) {
     e.preventDefault();
-    const [email, password] = use_form_data(e);
+    const [invite, name, email, password] = use_form_data(e);
 
-    client.login(email, password).then((r) => {
+    client.register(email, name, password, invite).then((r) => {
       if (r.ok) {
-        redirectOnwards();
+        const redir = searchParams.get("then");
+        router.push(redir || "/client/");
       } else {
         setError(r.error);
       }
@@ -47,7 +43,7 @@ export default function Login() {
             AuthStyle.auth_box
           )}
         >
-          <h1>Login</h1>
+          <h1>Register</h1>
           {error ? (
             <Information
               title={error.name}
@@ -56,28 +52,31 @@ export default function Login() {
             />
           ) : null}
 
-          {client.user ? (
-            <Information
-              title={"ℹ️"}
-              colour="bordered"
-              text={`Currently logged in as ${client.user.name}`}
-            >
-              <Button
-                className={STYLE.BORDER_RADIUS.md}
-                wide={true}
-                theme="primary"
-                on_click={redirectOnwards}
-              >
-                Continue as {client.user.name}
-              </Button>
-            </Information>
-          ) : null}
-
           <form
             action={"/a"}
             onSubmit={handleLogin}
             className={styles(cs.stack, cs.gap_lg)}
           >
+            <div className={AuthStyle.grid}>
+              <Input
+                width={"full"}
+                placeholder="Enter your invite"
+                type="text"
+                label="Invite"
+                initial={searchParams.get("invite") ?? ""}
+                min_length={5}
+                required={true}
+              />
+              <Input
+                width={"full"}
+                placeholder="Enter your name"
+                type="text"
+                label="Name"
+                min_length={5}
+                required={true}
+              />
+            </div>
+
             <Input
               width={"full"}
               placeholder="Enter your email"
