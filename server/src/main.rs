@@ -5,11 +5,11 @@ pub mod datatypes;
 pub mod utils;
 
 
-use std::u64::MAX;
+use std::{str::FromStr, u64::MAX};
 
 use api::routes;
 use managers::{db, invite_manager::{create_invite, get_invite}};
-use rocket_cors::{AllowedHeaders, AllowedOrigins};
+use rocket_cors::{AllowedHeaders, AllowedMethods, AllowedOrigins};
 
 #[launch]
 fn rocket() -> _ {
@@ -27,9 +27,16 @@ fn rocket() -> _ {
         rocket = rocket.mount(route.base, route.routes);
     }
 
+    let allowed_methods: AllowedMethods = ["Get", "Post", "Delete", "Options"]
+    .iter()
+    .map(|s| FromStr::from_str(s).unwrap())
+    .collect();
+
     let cors = rocket_cors::CorsOptions {
         allowed_origins: AllowedOrigins::all(),
+        allowed_methods: allowed_methods,
         allowed_headers: AllowedHeaders::some(&["token", "Accept"]),
+        max_age: Some(86400),
         allow_credentials: true,
         ..Default::default()
     }

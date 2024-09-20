@@ -1,4 +1,5 @@
 "use client";
+import Admin from "./admin";
 import { I_HttpOptions, t_http_get } from "./http";
 import { logger } from "./logger";
 
@@ -88,6 +89,7 @@ function validateToken<T extends { exp: number }>(token: string): Result<T> {
 
 export default class Client {
   _refreshToken?: string;
+  admin: Admin;
 
   set refreshToken(val: string) {
     this.logger.log(`refreshToken set.`);
@@ -104,6 +106,7 @@ export default class Client {
   logger = new logger("Client");
 
   constructor() {
+    this.admin = new Admin(this);
     const saved_token = localStorage.getItem("VOD_TOKEN");
 
     if (saved_token) {
@@ -155,7 +158,8 @@ export default class Client {
 
   public async fetch<T>(
     route: `/${string}`,
-    options: I_HttpOptions = { method: "GET" }
+    options: I_HttpOptions = { method: "GET" },
+    raw_data = false
   ): Promise<Result<T>> {
     const opt = options;
     if (!opt.headers) opt.headers = [];
@@ -172,7 +176,7 @@ export default class Client {
 
     opt.headers.push(["token", this.activeToken]);
 
-    const final_res = await t_http_get<T>(route, opt);
+    const final_res = await t_http_get<T>(route, opt, raw_data);
 
     if (final_res.ok) {
       if (final_res.value.ok) {

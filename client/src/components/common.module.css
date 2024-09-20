@@ -12,3 +12,24 @@
 .center_fill {
   height: 100vh;
 }
+
+.modal_outer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background-color: rgb(var(--color-surface-500));
+  padding: 1em;
+  min-width: 500px;
+  min-height: 500px;
+  border-radius: 0.5em;
+}

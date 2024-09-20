@@ -1,6 +1,7 @@
 use rocket::Route;
 mod user;
 mod invite;
+mod content;
 
 pub struct RouteHelper {
     pub base: String,
@@ -18,5 +19,10 @@ pub fn routes() -> Vec<RouteHelper> {
         routes: invite::routes()
     };
 
-    vec![user, invite]
+    let content = RouteHelper {
+        base: "/content".to_owned(),
+        routes: content::routes()
+    };
+
+    vec![user, invite, content]
 }

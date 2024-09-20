@@ -1,0 +1,25 @@
+.main {
+  height: 100vh;
+  display: flex;
+  padding: 1em;
+}
+
+.navbar {
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(var(--color-surface-500));
+  color: rgb(var(--color-surface-50));
+  height: 100%;
+  padding: 1em;
+  border-radius: 0.5em;
+}
+
+.navbar a {
+  color: rgb(var(--color-surface-50));
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.container {
+  padding: 1em;
+}

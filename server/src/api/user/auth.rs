@@ -24,7 +24,7 @@ pub fn login(input: Json<UserLogin>) -> Result<String> {
     input.validate()?;
     let user = user_manager::get_user(&input.email)?;
 
-    if !user_manager::compare_password(&input.password, &user.password) {
+    if !user_manager::compare_password(&input.password, &user) {
         return Err(ApiErrors::WrongCredentialsProvided.into())
     }
 

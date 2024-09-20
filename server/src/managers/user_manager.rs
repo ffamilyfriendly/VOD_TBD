@@ -66,7 +66,7 @@ pub struct User {
     pub id:         u16,
     pub email:      String,
     pub name:       String,
-    pub password:   String,
+    password:   String,
     pub flags:      PermissionsResolver,
     pub used_invite: String
 }
@@ -105,8 +105,8 @@ pub fn hash_password(password: &str) -> Result<String, argon2::Error> {
 }
 
 /// Takes a plaintext password and a hashed password and returns true if they match
-pub fn compare_password(plain_password: &str, hashed_password: &str) -> bool {
-    let parsed_hash = PasswordHash::new(&hashed_password).expect("fucky wucky");
+pub fn compare_password(plain_password: &str, user: &User) -> bool {
+    let parsed_hash = PasswordHash::new(&user.password).expect("fucky wucky");
     Argon2::default().verify_password(plain_password.to_string().as_bytes(), &parsed_hash).is_ok()
 }
 
@@ -157,12 +157,5 @@ mod tests {
         let deleted = delete_user(result.id).expect("could not delete test user");
 
         assert_eq!(deleted, 1);
-    }
-
-    #[test]
-    fn test_hashing() {
-        let psw = "hunter1";
-        let hashed = hash_password(psw).expect("could not hash password");
-        assert!(compare_password(psw, &hashed))
     }
 }

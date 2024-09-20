@@ -1,0 +1,17 @@
+.container {
+  background-color: rgb(var(--color-surface-700) / 0.5);
+  outline: 3px solid rgb(var(--color-surface-700));
+  border-radius: 0.5em;
+  width: 100%;
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.container > svg {
+  width: 3em;
+  height: 3em;
+}

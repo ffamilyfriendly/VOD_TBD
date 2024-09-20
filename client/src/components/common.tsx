@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import style from "./common.module.css";
 import cs from "@/styles/common.module.css";
+import { Bebas_Neue } from "next/font/google";
 
 export function styles(...args: (string | undefined)[]): string {
   return args.filter((f) => !!f).join(" ");
@@ -28,6 +29,25 @@ export function Center({ children, inline, ...props }: I_Center) {
     >
       {" "}
       {children}{" "}
+    </div>
+  );
+}
+
+const bebas = Bebas_Neue({ weight: "400", subsets: ["latin-ext"] });
+export function Title(props: { children: String }) {
+  return <h1 className={bebas.className}>{props.children}</h1>;
+}
+
+export function Modal(props: {
+  children: ReactNode | ReactNode[];
+  title: string;
+}) {
+  return (
+    <div className={style.modal_outer}>
+      <div className={style.modal}>
+        <Title>{props.title}</Title>
+        {props.children}
+      </div>
     </div>
   );
 }
