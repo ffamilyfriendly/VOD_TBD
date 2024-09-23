@@ -11,6 +11,13 @@ export default function UploadContainer({
     const input = document.createElement("input");
     input.type = "file";
     input.click();
+
+    input.addEventListener("change", (e) => {
+      if (e.target && "files" in e.target) {
+        const files = e.target.files as File[];
+        handleFile(files[0]);
+      }
+    });
   }
 
   function handleFile(f: File) {

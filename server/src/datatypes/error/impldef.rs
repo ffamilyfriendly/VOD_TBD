@@ -38,6 +38,8 @@ fn get_status(e: &Error) -> Status {
             InviteManagerErrors::Deplated | InviteManagerErrors::Expired => Status::Gone
         },
 
+        Error::IOError(_) => Status::InternalServerError,
+
         Error::Database(_e) => Status::InternalServerError,
         Error::Validation(_e)       => Status::BadRequest,
         Error::WebToken(_) => Status::InternalServerError

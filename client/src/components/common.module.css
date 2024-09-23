@@ -33,3 +33,8 @@
   min-height: 500px;
   border-radius: 0.5em;
 }
+
+.modal_header {
+  display: flex;
+  justify-content: space-between;
+}

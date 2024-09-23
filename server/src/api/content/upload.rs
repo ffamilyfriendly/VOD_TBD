@@ -2,9 +2,26 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::managers::content_manager::{self, Source, Upload};
+use crate::managers::content_manager::{self, Entity, Source, Upload};
 use crate::utils::jwt::ActiveToken;
 use crate::datatypes::error::definition::Result;
+
+
+#[derive(Validate, Serialize, Deserialize)]
+pub struct NewEntity {
+    parent: Option<String>,
+    entity_type: u8
+}
+
+#[post("/entity", data = "<input>")]
+pub fn create_entity(token: ActiveToken, input: Json<NewEntity>) -> Result<Entity> {
+    input.validate()?;
+    token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageContent)?;
+
+    let entity = content_manager::create_entity(input.entity_type.clone().into(), input.parent.clone())?;
+
+    Ok(entity.into())
+}
 
 #[derive(Validate, Serialize, Deserialize)]
 pub struct NewSource {
@@ -12,7 +29,7 @@ pub struct NewSource {
     size: u64
 }
 
-#[post("/create", data = "<input>")]
+#[post("/source", data = "<input>")]
 pub fn create_source(token: ActiveToken, input: Json<NewSource>) -> Result<Source> {
     input.validate()?;
     token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageContent)?;

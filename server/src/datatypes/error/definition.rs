@@ -1,3 +1,5 @@
+use std::io;
+
 use rocket::http::Status;
 use serde::{Deserialize, Serialize};
 use validator::ValidationErrors;
@@ -55,6 +57,9 @@ pub enum Error {
 
     #[error(transparent)]
     ApiError(ApiErrors),
+
+    #[error(transparent)]
+    IOError(#[from] io::Error),
 
     #[error(transparent)]
     WebToken(#[from] jsonwebtoken::errors::Error)

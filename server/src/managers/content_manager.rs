@@ -5,15 +5,63 @@ source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, siz
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::fs::OpenOptions;
+use rocket::http::ext::IntoCollection;
 use uuid::Uuid;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::datatypes::error::definition::Error;
 
 use super::db::get_connection;
 
+// "CREATE TABLE IF NOT EXISTS entity (entity_id UUID PRIMARY KEY, parent UUID REFERENCES entity(entity_id) ON DELETE SET NULL, entity_type TEXT NOT NULL)"
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum EntityType {
+    Movie,
+    Series,
+    SeriesEpisode,
+    Folder,
+    UNKNOWN
+}
+
+impl From<u8> for EntityType {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => EntityType::Movie,
+            1 => EntityType::Series,
+            2 => EntityType::SeriesEpisode,
+            3 => EntityType::Folder,
+            _ => EntityType::UNKNOWN
+        }
+    }
+}
+
 #[derive(Serialize)]
+pub struct Entity {
+    entity_id: String,
+    parent: Option<String>,
+    entity_type: EntityType
+}
+
+pub fn create_entity(entity_type: EntityType, parent: Option<String>) -> Result<Entity, Error> {
+    let id = Uuid::new_v4();
+    let con = get_connection()?;
+    let mut stmt = con.prepare("INSERT INTO entity (entity_id, parent, entity_type) VALUES (?1, ?2, ?3)")?;
+    stmt.raw_bind_parameter(1, id.to_string())?;
+    stmt.raw_bind_parameter(2, &parent)?;
+    stmt.raw_bind_parameter(3, entity_type.clone() as u8)?;
+
+    stmt.raw_execute()?;
+
+    Ok(Entity {
+        entity_id: id.to_string(),
+        parent: parent,
+        entity_type: entity_type
+    })
+}
+
+#[derive(Serialize, Clone)]
 pub struct Source {
     pub source_id: String,
     pub url: Option<String>,
@@ -47,6 +95,34 @@ pub fn create_source(parent: String, size: u64, creator: u16) -> Result<Source, 
         parent: parent,
         uploaded_by: creator
     })
+}
+
+pub fn get_sources(parent: &str) -> Result<Vec<Source>, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM sources WHERE parent = ?")?;
+    // source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL, uploaded_by INTEGER NOT NULL, FOREIGN KEY(uploaded_by) REFERENCES users(id)
+    let val = stmt.query_map([parent], |r| {
+        Ok(Source {
+            source_id: r.get(0)?,
+            url: r.get(1)?,
+            content_type: r.get(2).unwrap_or_default(),
+            priority: r.get(3)?,
+            size: r.get(4)?,
+            parent: r.get(5)?,
+            uploaded_by: r.get(6)?
+        })
+    })?;
+
+    let mut sources: Vec<Source> = Vec::new();
+
+    for row in val {
+        match row {
+            Ok(src) => sources.push(src),
+            Err(e) => eprintln!("error reading source: {:?}", e)
+        }
+    }
+
+    Ok(sources)
 }
 
 // con.execute("CREATE TABLE IF NOT EXISTS uploads (source_id UUID PRIMARY KEY, total_bytes INTEGER NOT NULL, bytes_uploaded INTEGER DEFAULT 0, last_push INTEGER NOT NULL, FOREIGN KEY(source_id) REFERENCES sources(source_id))", ())?;
@@ -109,15 +185,23 @@ pub fn update_upload(id: &str, len: usize) -> Result<usize, Error> {
     Ok(stmt.raw_execute()?)
 }
 
+/// Takes an upload ID and a slice of bytes and appends it to the specified file
+/// 
+/// # Arguments
+/// * `id` - the upload (source) id
+/// * `bytes` - a slice of bytes to write to the file
+/// 
+/// # Returns
+/// a Result containing a Upload struct representing the upload
 pub fn write_to_upload(id: &str, bytes: &[u8]) -> Result<Upload, Error> {
     let mut upl = get_upload(id)?;
 
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(format!("./{}.mp4", id)).unwrap();
+        .open(format!("./{}.mp4", id))?;
 
-    file.write_all(bytes).unwrap();
+    file.write_all(bytes)?;
     update_upload(id, bytes.len())?;
     upl.bytes_uploaded += bytes.len() as u64;
     Ok(upl)

@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
+import { Dispatch, ReactNode, SetStateAction } from "react";
 import style from "./common.module.css";
 import cs from "@/styles/common.module.css";
 import { Bebas_Neue } from "next/font/google";
+import Button from "./button";
 
 export function styles(...args: (string | undefined)[]): string {
   return args.filter((f) => !!f).join(" ");
@@ -41,11 +42,21 @@ export function Title(props: { children: String }) {
 export function Modal(props: {
   children: ReactNode | ReactNode[];
   title: string;
+  setModal: Dispatch<SetStateAction<boolean>>;
 }) {
   return (
     <div className={style.modal_outer}>
       <div className={style.modal}>
-        <Title>{props.title}</Title>
+        <div className={style.modal_header}>
+          <Title>{props.title}</Title>
+          <Button
+            on_click={() => props.setModal(false)}
+            className={styles(STYLE.BORDER_RADIUS.md)}
+            theme="bordered"
+          >
+            Close
+          </Button>
+        </div>
         {props.children}
       </div>
     </div>

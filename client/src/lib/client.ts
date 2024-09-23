@@ -156,14 +156,7 @@ export default class Client {
     }
   }
 
-  public async fetch<T>(
-    route: `/${string}`,
-    options: I_HttpOptions = { method: "GET" },
-    raw_data = false
-  ): Promise<Result<T>> {
-    const opt = options;
-    if (!opt.headers) opt.headers = [];
-
+  private async ensure_token(): Promise<Result<null>> {
     if (!this.activeToken || !validateToken(this.activeToken).ok) {
       this.logger.log("No active token found. Trying to get one...");
       const token_resp = await this.getActiveToken();
@@ -174,7 +167,50 @@ export default class Client {
       this.activeToken = token_resp.value;
     }
 
-    opt.headers.push(["token", this.activeToken]);
+    return Ok(null);
+  }
+
+  public async raw_fetch(
+    route: `/${string}`,
+    data: Document | XMLHttpRequestBodyInit | null,
+    options: I_HttpOptions = { method: "GET" }
+  ): Promise<Result<XMLHttpRequest>> {
+    try {
+      const opt = options;
+      if (!opt.headers) opt.headers = [];
+      let token_resp = await this.ensure_token();
+
+      if (!token_resp.ok) {
+        return Err(token_resp.error);
+      }
+
+      const xhttp = new XMLHttpRequest();
+      xhttp.open(options.method, `${API_PATH}${route}`, true);
+      xhttp.setRequestHeader("token", this.activeToken as string);
+
+      xhttp.send(data);
+
+      return Ok(xhttp);
+    } catch (e) {
+      return Err(e instanceof Error ? e : Error("something went wrong"));
+    }
+  }
+
+  public async fetch<T>(
+    route: `/${string}`,
+    options: I_HttpOptions = { method: "GET" },
+    raw_data = false
+  ): Promise<Result<T>> {
+    const opt = options;
+    if (!opt.headers) opt.headers = [];
+
+    let token_resp = await this.ensure_token();
+
+    if (!token_resp.ok) {
+      return Err(token_resp.error);
+    }
+
+    opt.headers.push(["token", this.activeToken as string]);
 
     const final_res = await t_http_get<T>(route, opt, raw_data);
 
