@@ -106,7 +106,11 @@ export default function UploadModal(props: I_UploadModal) {
 
   async function createSource() {
     if (!file) return alert("fuck off");
-    const res = await client.admin.create_source(props.parent, file?.size || 0);
+    const res = await client.admin.create_source(
+      props.parent,
+      file?.size || 0,
+      file.name.split(".").pop() || "mp4"
+    );
     console.log(res);
 
     if (res.ok) {

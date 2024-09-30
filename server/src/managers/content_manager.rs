@@ -1,16 +1,17 @@
 use std::io::Write;
+use std::process::Command;
 /* 
 source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL, uploaded_by INTEGER NOT NULL, FOREIGN KEY(uploaded_by) REFERENCES users(id)
 */
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::fs::OpenOptions;
-use rocket::http::ext::IntoCollection;
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
 
 use crate::datatypes::error::definition::Error;
+use crate::utils::ffmpeg;
 
 use super::db::get_connection;
 
@@ -132,7 +133,8 @@ pub struct Upload {
     pub source_id: String,
     pub total_bytes: u64,
     pub bytes_uploaded: u64,
-    pub last_push: u64
+    pub last_push: u64,
+    pub filetype: String
 }
 
 pub fn get_timestamp() -> u64 {
@@ -142,18 +144,19 @@ pub fn get_timestamp() -> u64 {
     since_epoch.as_secs()
 }
 
-pub fn create_upload(id: &str, total_bytes: &u64) -> Result<Upload, Error> {
+pub fn create_upload(id: &str, total_bytes: &u64, filetype: String) -> Result<Upload, Error> {
     let con = get_connection()?;
 
-    let mut stmt = con.prepare("INSERT INTO uploads VALUES (?1, ?2, ?3, ?4)")?;
+    let mut stmt = con.prepare("INSERT INTO uploads VALUES (?1, ?2, ?3, ?4, ?5)")?;
     stmt.raw_bind_parameter(1, id)?;
     stmt.raw_bind_parameter(2, total_bytes)?;
     stmt.raw_bind_parameter(3, 0)?;
     stmt.raw_bind_parameter(4, 0)?;
+    stmt.raw_bind_parameter(5, &filetype)?;
 
     stmt.raw_execute()?;
 
-    Ok(Upload { source_id: id.to_owned(), total_bytes: total_bytes.to_owned(), bytes_uploaded: 0, last_push: get_timestamp() })
+    Ok(Upload { source_id: id.to_owned(), total_bytes: total_bytes.to_owned(), bytes_uploaded: 0, last_push: get_timestamp(), filetype })
 }
 
 pub fn get_upload(id: &str) -> Result<Upload, Error> {
@@ -167,6 +170,7 @@ pub fn get_upload(id: &str) -> Result<Upload, Error> {
             total_bytes:      f.get(1)?,
             bytes_uploaded:       f.get(2)?,
             last_push:   f.get(3)?,
+            filetype: f.get(4)?
          })
      }) {
         Ok(d) => Ok(d),
@@ -199,10 +203,17 @@ pub fn write_to_upload(id: &str, bytes: &[u8]) -> Result<Upload, Error> {
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(format!("./{}.mp4", id))?;
+        .open(format!("./{}.{}", id, &upl.filetype))?;
 
     file.write_all(bytes)?;
     update_upload(id, bytes.len())?;
     upl.bytes_uploaded += bytes.len() as u64;
+
+    if upl.bytes_uploaded >= upl.total_bytes {
+        let probed = ffmpeg::probe_file_codec(&format!("./{}.{}", id, &upl.filetype))?;
+        // TODO: update the source "video_codec" and "audio_codec" with the probed codecs
+        println!("video: {:?}\naudio: {:?}", probed.video, probed.audio);
+    }
+
     Ok(upl)
 }

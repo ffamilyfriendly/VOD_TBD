@@ -42,6 +42,12 @@ pub enum ApiErrors {
 }
 
 #[derive(thiserror::Error, Debug)]
+pub enum FFmpegErrors {
+    #[error("General error. {0}")]
+    GeneralError(String)
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
     Database(#[from] rusqlite::Error),
@@ -62,7 +68,13 @@ pub enum Error {
     IOError(#[from] io::Error),
 
     #[error(transparent)]
-    WebToken(#[from] jsonwebtoken::errors::Error)
+    WebToken(#[from] jsonwebtoken::errors::Error),
+
+    #[error(transparent)]
+    JSONParser(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    FFmpeg(FFmpegErrors)
 }
 
 #[derive(Serialize, Deserialize)]

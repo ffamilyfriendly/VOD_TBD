@@ -4,9 +4,11 @@ import { Title } from "@/components/common";
 import { Source } from "@/lib/admin";
 import { useParams } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
-import UploadContainer from "../uploadContainer";
 import UploadModal from "../upload";
 import Button from "@/components/button";
+import common from "@/styles/common.module.css";
+import { default as SourceElement } from "./source";
+import MetaData from "./metadata";
 
 function Sources(props: { id: string }) {
   const client = useContext(ClientContext);
@@ -29,17 +31,17 @@ function Sources(props: { id: string }) {
       <Button on_click={() => setModal(true)} theme="primary">
         new source
       </Button>
-      <table>
+      <table className={common.table}>
         <tr>
           <th>id</th>
+          <th>type</th>
+          <th>priority</th>
           <th>size</th>
+          <th>options</th>
         </tr>
 
         {sources.map((s) => (
-          <tr key={s.source_id}>
-            {" "}
-            <td>{s.source_id}</td> <td>{s.size}</td>{" "}
-          </tr>
+          <SourceElement key={s.source_id} data={s} />
         ))}
       </table>
     </div>
@@ -55,6 +57,7 @@ export default function Edit() {
     <main>
       {" "}
       cum {id}
+      <MetaData id={id} />
       <Sources id={id} />
     </main>
   );

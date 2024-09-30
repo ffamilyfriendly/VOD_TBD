@@ -42,7 +42,8 @@ fn get_status(e: &Error) -> Status {
 
         Error::Database(_e) => Status::InternalServerError,
         Error::Validation(_e)       => Status::BadRequest,
-        Error::WebToken(_) => Status::InternalServerError
+        Error::WebToken(_) => Status::InternalServerError,
+        _ => Status::InternalServerError
     }
 }
 

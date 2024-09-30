@@ -20,6 +20,7 @@ interface I_Upload {
   total_bytes: number;
   bytes_uploaded: number;
   last_push: number;
+  filetype: string;
 }
 
 class Upload {
@@ -154,10 +155,10 @@ export default class Admin {
     });
   }
 
-  async create_source(parent: string, size: number) {
+  async create_source(parent: string, size: number, filetype: string) {
     return this.client.fetch<Source>("/content/source", {
       method: "POST",
-      data: { parent, size },
+      data: { parent, size, filetype },
     });
   }
 

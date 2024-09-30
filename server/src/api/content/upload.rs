@@ -26,7 +26,8 @@ pub fn create_entity(token: ActiveToken, input: Json<NewEntity>) -> Result<Entit
 #[derive(Validate, Serialize, Deserialize)]
 pub struct NewSource {
     parent: String,
-    size: u64
+    size: u64,
+    filetype: String
 }
 
 #[post("/source", data = "<input>")]
@@ -35,7 +36,7 @@ pub fn create_source(token: ActiveToken, input: Json<NewSource>) -> Result<Sourc
     token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageContent)?;
 
     let source = content_manager::create_source(input.parent.clone(), input.size, token.uid)?;
-    content_manager::create_upload(&source.source_id, &input.size)?;
+    content_manager::create_upload(&source.source_id, &input.size, input.filetype.clone())?;
 
     Ok(source.into())
 }

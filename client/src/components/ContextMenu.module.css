@@ -1,0 +1,29 @@
+.context_menu {
+  position: absolute;
+  display: block;
+  z-index: 4;
+  background-color: rgb(var(--color-surface-500));
+  border-radius: 0.5em;
+
+  list-style: none;
+  padding: 0.6em;
+}
+
+.entry {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  padding: 0.4em;
+  border-radius: 0.5em;
+  cursor: pointer;
+}
+
+.entry:hover {
+  background-color: rgb(var(--color-surface-400) / 0.5);
+}
+
+.icon {
+}
+
+.text {
+}
