@@ -127,6 +127,8 @@ export interface Source {
   size: number;
   parent: string;
   uploaded_by: number;
+  video_codec?: string;
+  audio_codec?: string;
 }
 
 export enum EntityType {

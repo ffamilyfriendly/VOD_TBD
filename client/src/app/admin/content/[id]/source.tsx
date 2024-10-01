@@ -1,6 +1,7 @@
 import { ClientContext } from "@/components/ClientProvider";
 import ContextMenu from "@/components/ContextMenu";
 import { Source as SourceThing } from "@/lib/admin";
+import { codec_supported } from "@/lib/helpers";
 import { useContext, useEffect, useRef, useState } from "react";
 import { MdDeleteForever, MdOpenInFull } from "react-icons/md";
 
@@ -35,6 +36,14 @@ export default function Source({ data, ...props }: I_Source) {
   const [pos, set_pos] = useState<{ top: number; left: number } | null>();
   const [show_context, set_show_context] = useState(false);
   const client = useContext(ClientContext);
+
+  if (data.audio_codec) {
+    console.log("is audio supported? ", codec_supported(data.audio_codec));
+  }
+
+  if (data.video_codec) {
+    console.log("is video supported? ", codec_supported(data.video_codec));
+  }
 
   useEffect(() => {
     if (r.current) {

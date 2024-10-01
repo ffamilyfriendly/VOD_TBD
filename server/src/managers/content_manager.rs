@@ -6,6 +6,7 @@ source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, siz
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::fs::OpenOptions;
+use rusqlite::ToSql;
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
@@ -70,7 +71,9 @@ pub struct Source {
     pub priority: u16,
     pub size: u64,
     pub parent: String,
-    pub uploaded_by: u16
+    pub uploaded_by: u16,
+    pub video_codec: Option<String>,
+    pub audio_codec: Option<String>
 }
 
 pub fn create_source(parent: String, size: u64, creator: u16) -> Result<Source, Error> {
@@ -94,7 +97,9 @@ pub fn create_source(parent: String, size: u64, creator: u16) -> Result<Source, 
         priority: 1,
         size: size,
         parent: parent,
-        uploaded_by: creator
+        uploaded_by: creator,
+        audio_codec: None,
+        video_codec: None
     })
 }
 
@@ -110,7 +115,9 @@ pub fn get_sources(parent: &str) -> Result<Vec<Source>, Error> {
             priority: r.get(3)?,
             size: r.get(4)?,
             parent: r.get(5)?,
-            uploaded_by: r.get(6)?
+            uploaded_by: r.get(6)?,
+            video_codec: r.get(7)?,
+            audio_codec: r.get(8)?,
         })
     })?;
 
@@ -189,6 +196,45 @@ pub fn update_upload(id: &str, len: usize) -> Result<usize, Error> {
     Ok(stmt.raw_execute()?)
 }
 
+pub struct SourceUpdate {
+    pub video_codec: Option<String>,
+    pub audio_codec: Option<String>,
+    pub file_type: Option<String>
+}
+
+/// Updates the selected source with the chosen values.
+/// a value of None on any property will leave that property unchanged
+pub fn update_source(id: &str, update: SourceUpdate) -> Result<usize, Error> {
+    let con = get_connection()?;
+    let mut query = "UPDATE sources SET ".to_owned();
+    let mut params: Vec<&dyn ToSql> = vec![];
+
+    if let Some(video_codec) = &update.video_codec {
+        query += "video_codec = ?,";
+        params.push(video_codec);
+    }
+
+    if let Some(audio_codec) = &update.audio_codec {
+        query += "audio_codec = ?,";
+        params.push(audio_codec);
+    };
+
+    if let Some(file_type) = &update.file_type {
+        query += "type = ?,";
+        params.push(file_type);
+    }
+
+    query.pop();
+
+    query += "WHERE source_id = ?";
+    params.push(&id);
+
+    let mut stmt = con.prepare(&query)?;
+    Ok(stmt.execute(rusqlite::params_from_iter(params))?)
+    
+}
+
+
 /// Takes an upload ID and a slice of bytes and appends it to the specified file
 /// 
 /// # Arguments
@@ -212,7 +258,9 @@ pub fn write_to_upload(id: &str, bytes: &[u8]) -> Result<Upload, Error> {
     if upl.bytes_uploaded >= upl.total_bytes {
         let probed = ffmpeg::probe_file_codec(&format!("./{}.{}", id, &upl.filetype))?;
         // TODO: update the source "video_codec" and "audio_codec" with the probed codecs
+
         println!("video: {:?}\naudio: {:?}", probed.video, probed.audio);
+        update_source(&upl.source_id, SourceUpdate { video_codec: probed.video, audio_codec: probed.audio, file_type: Some(upl.filetype.clone()) })?;
     }
 
     Ok(upl)
