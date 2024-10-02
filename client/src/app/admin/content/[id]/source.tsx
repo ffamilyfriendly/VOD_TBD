@@ -1,9 +1,10 @@
 import { ClientContext } from "@/components/ClientProvider";
 import ContextMenu from "@/components/ContextMenu";
-import { Source as SourceThing } from "@/lib/admin";
+import { Source as SourceThing } from "@/lib/content";
 import { codec_supported } from "@/lib/helpers";
 import { useContext, useEffect, useRef, useState } from "react";
 import { MdDeleteForever, MdOpenInFull } from "react-icons/md";
+import { SourceContext } from "./page";
 
 interface I_Source {
   data: SourceThing;
@@ -37,12 +38,29 @@ export default function Source({ data, ...props }: I_Source) {
   const [show_context, set_show_context] = useState(false);
   const client = useContext(ClientContext);
 
+  const { setSources } = useContext(SourceContext)!;
+
   if (data.audio_codec) {
     console.log("is audio supported? ", codec_supported(data.audio_codec));
   }
 
   if (data.video_codec) {
     console.log("is video supported? ", codec_supported(data.video_codec));
+  }
+
+  async function delete_source() {
+    const res = await client.content.delete_source(data.source_id);
+
+    if (res.ok) {
+      setSources((s) => {
+        return s.filter((src) => src.source_id !== data.source_id);
+      });
+      // remove source from state
+    } else {
+      alert("could not delete source");
+      console.error(res.error);
+      // WE NEED TO ERROR SHIT HERE
+    }
   }
 
   useEffect(() => {
@@ -80,7 +98,7 @@ export default function Source({ data, ...props }: I_Source) {
               text: "Delete",
               icon: MdDeleteForever,
               on_click: () => {
-                alert("CUM");
+                delete_source();
               },
             },
           ]}

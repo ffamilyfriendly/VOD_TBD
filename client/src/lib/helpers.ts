@@ -34,3 +34,19 @@ export function codec_supported(codec: String): "probably" | "maybe" | false {
   if (!answer) return false;
   else return answer;
 }
+
+/**
+ * Takes a milisecond value and returns a formatted string
+ * @example ms_to_time(2000) -> "2 seconds"
+ * @param ms value in miliseconds
+ */
+export function ms_to_time(ms: number): string {
+  const as_hours = ms / 1000 / 60 / 60;
+  const as_minutes = ms / 1000 / 60;
+  const as_seconds = ms / 1000;
+
+  if (as_hours > 1) return `${as_hours.toFixed(2)} hours`;
+  if (as_minutes > 1) return `${as_minutes.toFixed(2)} minutes`;
+  if (as_seconds > 1) return `${as_seconds.toFixed(2)} seconds`;
+  return `${ms.toFixed(2)} milliseconds`;
+}

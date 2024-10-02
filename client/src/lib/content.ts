@@ -62,7 +62,7 @@ class Upload {
 
     const request_start = Date.now();
     const res = await this.client.fetch(
-      `/content/upload/${this.id}`,
+      `/content/${this.id}/upload`,
       {
         method: "POST",
         data: byte_array,
@@ -144,7 +144,7 @@ export interface Entity {
   entity_type: EntityType;
 }
 
-export default class Admin {
+export default class Content {
   client: Client;
   constructor(c: Client) {
     this.client = c;
@@ -167,6 +167,12 @@ export default class Admin {
   async get_sources(parent: string) {
     return this.client.fetch<Source[]>(`/content/${parent}/sources`, {
       method: "GET",
+    });
+  }
+
+  async delete_source(source_id: string) {
+    return this.client.fetch<number>(`/content/source/${source_id}`, {
+      method: "DELETE",
     });
   }
 

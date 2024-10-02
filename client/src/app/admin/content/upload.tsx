@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { Modal } from "@/components/common";
+import { Modal, STYLE, styles } from "@/components/common";
 import UploadContainer from "./uploadContainer";
 import {
   Dispatch,
@@ -13,6 +13,8 @@ import Button from "@/components/button";
 import { ClientContext } from "@/components/ClientProvider";
 import { Err, Ok, Result } from "@/lib/client";
 import Style from "./upload.module.css";
+import ProgressBar from "@/components/ProgressBar";
+import { ms_to_time } from "@/lib/helpers";
 
 interface I_PreviewData {
   thumbnail: Blob;
@@ -101,12 +103,17 @@ interface I_UploadModal {
 
 export default function UploadModal(props: I_UploadModal) {
   const [file, setFile] = useState<File>();
-  const ref = useRef<string>();
+  const [progress, set_progress] = useState<{
+    progress: number;
+    eta: number;
+  } | null>(null);
+  const animation_frame_id = useRef<number | null>(null);
+
   const client = useContext(ClientContext);
 
   async function createSource() {
     if (!file) return alert("fuck off");
-    const res = await client.admin.create_source(
+    const res = await client.content.create_source(
       props.parent,
       file?.size || 0,
       file.name.split(".").pop() || "mp4"
@@ -115,11 +122,13 @@ export default function UploadModal(props: I_UploadModal) {
 
     if (res.ok) {
       console.log(res.value);
-      const upload = client.admin.upload_file(res.value.source_id, file);
+      const upload = client.content.upload_file(res.value.source_id, file);
       console.log(upload);
       console.log("starting upload...");
-      upload.callback = (percent_done, avg_chunk, eta_ms) => {
-        console.log(`${percent_done}% (${eta_ms / 1000} seconds)`);
+      upload.callback = (percent_done, _avg_chunk, eta_ms) => {
+        animation_frame_id.current = requestAnimationFrame(() => {
+          set_progress({ progress: percent_done, eta: eta_ms });
+        });
       };
       upload.start();
     } else {
@@ -131,8 +140,23 @@ export default function UploadModal(props: I_UploadModal) {
     <Modal setModal={props.setModal} title="Upload">
       {!file ? <UploadContainer setFile={setFile} /> : <Preview file={file} />}
       {file?.name}
-      <Button on_click={createSource} theme="secondary">
-        hi
+      {progress && (
+        <>
+          <ProgressBar
+            inner_text={`${progress.progress.toFixed(2)}%`}
+            value={progress.progress}
+          />
+          <p>
+            <b>ETA:</b> {ms_to_time(progress.eta)}
+          </p>
+        </>
+      )}
+      <Button
+        on_click={createSource}
+        theme="primary"
+        className={styles(STYLE.BORDER_RADIUS.md)}
+      >
+        Start
       </Button>
     </Modal>
   );

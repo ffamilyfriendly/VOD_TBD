@@ -1,5 +1,5 @@
 "use client";
-import Admin from "./admin";
+import Content from "./content";
 import { I_HttpOptions, t_http_get } from "./http";
 import { logger } from "./logger";
 
@@ -89,7 +89,7 @@ function validateToken<T extends { exp: number }>(token: string): Result<T> {
 
 export default class Client {
   _refreshToken?: string;
-  admin: Admin;
+  content: Content;
 
   set refreshToken(val: string) {
     this.logger.log(`refreshToken set.`);
@@ -106,7 +106,7 @@ export default class Client {
   logger = new logger("Client");
 
   constructor() {
-    this.admin = new Admin(this);
+    this.content = new Content(this);
     const saved_token = localStorage.getItem("VOD_TOKEN");
 
     if (saved_token) {

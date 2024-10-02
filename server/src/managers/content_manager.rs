@@ -41,9 +41,9 @@ impl From<u8> for EntityType {
 
 #[derive(Serialize)]
 pub struct Entity {
-    entity_id: String,
-    parent: Option<String>,
-    entity_type: EntityType
+    pub entity_id: String,
+    pub parent: Option<String>,
+    pub entity_type: EntityType
 }
 
 pub fn create_entity(entity_type: EntityType, parent: Option<String>) -> Result<Entity, Error> {
@@ -131,6 +131,103 @@ pub fn get_sources(parent: &str) -> Result<Vec<Source>, Error> {
     }
 
     Ok(sources)
+}
+
+#[derive(Serialize, Clone)]
+pub struct MetaData {
+    pub metadata_id: String,
+    pub thumbnail: String,
+    pub backdrop: String,
+    pub description: String,
+    pub ratings: f64,
+    pub language: String,
+    pub release_date: String
+}
+
+#[derive(Deserialize, Clone)]
+pub struct MetadataUpdate {
+    pub thumbnail: Option<String>,
+    pub backdrop: Option<String>,
+    pub description: Option<String>,
+    pub ratings: Option<f64>,
+    pub language: Option<String>,
+    pub release_date: Option<String>
+}
+
+/// Creates a empty metadata entry with the chosen ID
+/// 
+/// # Returns
+/// a usize with value 1 or an error
+pub fn create_empty_metadata(id: &str) -> Result<usize, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("INSERT INTO metadata (metadata_id) VALUES (?1)")?;
+
+    Ok(stmt.execute([id])?)
+}
+
+pub fn get_metadata(id: &str) -> Result<MetaData, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM metadata WHERE metadata_id = ?")?;
+
+    let result = stmt.query_row([id], |f| {
+        Ok(MetaData {
+            metadata_id: f.get(1)?,
+            thumbnail: f.get(2)?,
+            backdrop: f.get(3)?,
+            description: f.get(4)?,
+            ratings: f.get(5)?,
+            language: f.get(7)?,
+            release_date: f.get(8)?
+        })
+    })?;
+
+    Ok(result)
+}
+
+/// Updates the selected metadata with the chosen values.
+/// a value of None on any property will leave that property unchanged
+pub fn update_metadata(id: &str, update: MetadataUpdate) -> Result<usize, Error> {
+    let con = get_connection()?;
+    let mut query = "UPDATE metadata SET ".to_owned();
+    let mut params: Vec<&dyn ToSql> = vec![];
+
+    if let Some(thumbnail) = &update.thumbnail {
+        query += "thumbnail = ?,";
+        params.push(thumbnail);
+    }
+
+    if let Some(backdrop) = &update.backdrop {
+        query += "backdrop = ?,";
+        params.push(backdrop);
+    };
+
+    if let Some(description) = &update.description {
+        query += "description = ?,";
+        params.push(description);
+    }
+
+    if let Some(ratings) = &update.ratings {
+        query += "ratings = ?,";
+        params.push(ratings);
+    }
+
+    if let Some(language) = &update.language {
+        query += "language = ?,";
+        params.push(language);
+    }
+
+    if let Some(release_date) = &update.release_date {
+        query += "release_date = ?,";
+        params.push(release_date);
+    }
+
+    query.pop();
+
+    query += "WHERE metadata_id = ?";
+    params.push(&id);
+
+    let mut stmt = con.prepare(&query)?;
+    Ok(stmt.execute(rusqlite::params_from_iter(params))?)   
 }
 
 // con.execute("CREATE TABLE IF NOT EXISTS uploads (source_id UUID PRIMARY KEY, total_bytes INTEGER NOT NULL, bytes_uploaded INTEGER DEFAULT 0, last_push INTEGER NOT NULL, FOREIGN KEY(source_id) REFERENCES sources(source_id))", ())?;
@@ -230,8 +327,22 @@ pub fn update_source(id: &str, update: SourceUpdate) -> Result<usize, Error> {
     params.push(&id);
 
     let mut stmt = con.prepare(&query)?;
-    Ok(stmt.execute(rusqlite::params_from_iter(params))?)
-    
+    Ok(stmt.execute(rusqlite::params_from_iter(params))?)   
+}
+
+/// Deletes a source
+/// 
+/// # Arguments
+/// * `id` - the id of the source to delete
+/// 
+/// # Returns
+/// a usize with a value of 1 if deleted, otherwise 0 if nothing was deleted (source does not exist)
+pub fn delete_source(id: &str) -> Result<usize, Error> {
+    let con = get_connection()?;
+
+    let mut stmt = con.prepare("DELETE FROM sources WHERE source_id = ?")?;
+
+    Ok(stmt.execute([id])?)
 }
 
 
