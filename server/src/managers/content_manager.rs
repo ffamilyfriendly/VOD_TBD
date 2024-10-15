@@ -1,12 +1,11 @@
 use std::io::Write;
-use std::process::Command;
 /* 
 source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL, uploaded_by INTEGER NOT NULL, FOREIGN KEY(uploaded_by) REFERENCES users(id)
 */
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::fs::OpenOptions;
-use rusqlite::ToSql;
+use rusqlite::{Row, ToSql};
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
@@ -23,7 +22,7 @@ pub enum EntityType {
     Movie,
     Series,
     SeriesEpisode,
-    Folder,
+    SeriesSeason,
     UNKNOWN
 }
 
@@ -33,7 +32,7 @@ impl From<u8> for EntityType {
             0 => EntityType::Movie,
             1 => EntityType::Series,
             2 => EntityType::SeriesEpisode,
-            3 => EntityType::Folder,
+            3 => EntityType::SeriesSeason,
             _ => EntityType::UNKNOWN
         }
     }
@@ -61,6 +60,21 @@ pub fn create_entity(entity_type: EntityType, parent: Option<String>) -> Result<
         parent: parent,
         entity_type: entity_type
     })
+}
+
+pub fn get_entity(entity_id: &str) -> Result<Entity, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM entity WHERE entity_id = ?")?;
+    let entity = stmt.query_row([entity_id], |row| {
+        let num: u8 = row.get(2)?;
+        Ok(Entity {
+            entity_id: row.get(0)?,
+            parent: row.get(1)?,
+            entity_type: num.into()
+        }  
+    )});
+
+    Ok(entity?)
 }
 
 #[derive(Serialize, Clone)]
@@ -103,29 +117,33 @@ pub fn create_source(parent: String, size: u64, creator: u16) -> Result<Source, 
     })
 }
 
+fn serialize_source(r: &Row<'_>) -> Result<Source, Error> {
+    Ok(Source {
+        source_id: r.get(0)?,
+        url: r.get(1)?,
+        content_type: r.get(2).unwrap_or_default(),
+        priority: r.get(3)?,
+        size: r.get(4)?,
+        parent: r.get(5)?,
+        uploaded_by: r.get(6)?,
+        video_codec: r.get(7)?,
+        audio_codec: r.get(8)?,
+    })
+}
+
 pub fn get_sources(parent: &str) -> Result<Vec<Source>, Error> {
     let con = get_connection()?;
     let mut stmt = con.prepare("SELECT * FROM sources WHERE parent = ?")?;
     // source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL, uploaded_by INTEGER NOT NULL, FOREIGN KEY(uploaded_by) REFERENCES users(id)
     let val = stmt.query_map([parent], |r| {
-        Ok(Source {
-            source_id: r.get(0)?,
-            url: r.get(1)?,
-            content_type: r.get(2).unwrap_or_default(),
-            priority: r.get(3)?,
-            size: r.get(4)?,
-            parent: r.get(5)?,
-            uploaded_by: r.get(6)?,
-            video_codec: r.get(7)?,
-            audio_codec: r.get(8)?,
-        })
+        Ok(serialize_source(r))
     })?;
 
     let mut sources: Vec<Source> = Vec::new();
 
     for row in val {
         match row {
-            Ok(src) => sources.push(src),
+            Ok(src) => sources.push(src?),
             Err(e) => eprintln!("error reading source: {:?}", e)
         }
     }
@@ -133,15 +151,22 @@ pub fn get_sources(parent: &str) -> Result<Vec<Source>, Error> {
     Ok(sources)
 }
 
-#[derive(Serialize, Clone)]
+pub fn get_source(id: &str) -> Result<Source, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM sources WHERE source_id = ?")?;
+    stmt.query_row([id], |f| Ok(serialize_source(f)))?
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MetaData {
     pub metadata_id: String,
-    pub thumbnail: String,
-    pub backdrop: String,
-    pub description: String,
-    pub ratings: f64,
-    pub language: String,
-    pub release_date: String
+    pub title: Option<String>,
+    pub thumbnail: Option<String>,
+    pub backdrop: Option<String>,
+    pub description: Option<String>,
+    pub ratings: Option<f64>,
+    pub language: Option<String>,
+    pub release_date: Option<String>
 }
 
 #[derive(Deserialize, Clone)]
@@ -151,7 +176,8 @@ pub struct MetadataUpdate {
     pub description: Option<String>,
     pub ratings: Option<f64>,
     pub language: Option<String>,
-    pub release_date: Option<String>
+    pub release_date: Option<String>,
+    pub title: Option<String>
 }
 
 /// Creates a empty metadata entry with the chosen ID
@@ -171,15 +197,95 @@ pub fn get_metadata(id: &str) -> Result<MetaData, Error> {
 
     let result = stmt.query_row([id], |f| {
         Ok(MetaData {
-            metadata_id: f.get(1)?,
+            metadata_id: f.get(0)?,
+            title: f.get(1)?,
             thumbnail: f.get(2)?,
             backdrop: f.get(3)?,
             description: f.get(4)?,
             ratings: f.get(5)?,
-            language: f.get(7)?,
-            release_date: f.get(8)?
+            language: f.get(6)?,
+            release_date: f.get(7)?
         })
     })?;
+
+    Ok(result)
+}
+
+#[derive(Deserialize, Clone, FromForm)]
+pub struct EntitySelectOptions {
+    pub language: Option<String>,
+    pub title_exact: Option<String>,
+    pub ratings_above: Option<f64>,
+    pub ratings_below: Option<f64>
+}
+
+pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<Collection>, Error> {
+    let con = get_connection()?;
+    let mut query = "SELECT * FROM entity AS e JOIN metadata AS m ON m.metadata_id = e.entity_id WHERE".to_owned();
+    let mut params: Vec<&dyn ToSql> = vec![];
+
+    if let Some(language) = &filter.language {
+        query += " m.language = ? AND";
+        params.push(language);
+    }
+
+    if let Some(title_exact) = &filter.title_exact {
+        query += " m.title = ? AND";
+        params.push(title_exact);
+    }
+
+    if let Some(ratings_above) = &filter.ratings_above {
+        query += " m.ratings > ? AND";
+        params.push(ratings_above);
+    }
+
+    if let Some(ratings_below) = &filter.ratings_below {
+        query += " m.ratings > ? AND";
+        params.push(ratings_below);
+    }
+
+
+    // As entities without a parent (top level entities) has a parent value of null
+    // which we need to check for with a specific sql syntax we check if parent is root
+    match parent {
+        "root" => {
+            query += " e.parent is null";
+        },
+        _ => {
+            query += " e.parent = ?";
+            params.push(&parent);
+        }
+    };
+
+    println!("STMT: {}", &query);
+
+    let mut stmt = con.prepare(&query)?;
+    let mut rows = stmt.query(rusqlite::params_from_iter(params))?;
+
+    let mut result: Vec<Collection> = Vec::new();
+
+    while let Some(row) = rows.next()? {
+        let ent_type: u8 = row.get(2)?;
+
+        let entity = Entity {
+            entity_id: row.get(0)?,
+            parent: row.get(1)?,
+            entity_type: ent_type.into()
+        };
+
+        let metadata = MetaData {
+            metadata_id: row.get(3)?,
+            title: row.get(4)?,
+            thumbnail: row.get(5)?,
+            backdrop: row.get(6)?,
+            description: row.get(7)?,
+            ratings: row.get(8)?,
+            language: row.get(9)?,
+            release_date: row.get(10)?
+        };
+
+        result.push(Collection { entity, metadata });
+    };
 
     Ok(result)
 }
@@ -190,6 +296,11 @@ pub fn update_metadata(id: &str, update: MetadataUpdate) -> Result<usize, Error>
     let con = get_connection()?;
     let mut query = "UPDATE metadata SET ".to_owned();
     let mut params: Vec<&dyn ToSql> = vec![];
+
+    if let Some(title) = &update.title {
+        query += "title = ?,";
+        params.push(title);
+    }
 
     if let Some(thumbnail) = &update.thumbnail {
         query += "thumbnail = ?,";
@@ -228,6 +339,19 @@ pub fn update_metadata(id: &str, update: MetadataUpdate) -> Result<usize, Error>
 
     let mut stmt = con.prepare(&query)?;
     Ok(stmt.execute(rusqlite::params_from_iter(params))?)   
+}
+
+#[derive(Serialize)]
+pub struct Collection {
+    pub entity: Entity,
+    pub metadata: MetaData
+}
+
+pub fn get_collection(entity_id: &str) -> Result<Collection, Error> {
+    Ok(Collection {
+        entity: get_entity(entity_id)?,
+        metadata: get_metadata(entity_id)?
+    })
 }
 
 // con.execute("CREATE TABLE IF NOT EXISTS uploads (source_id UUID PRIMARY KEY, total_bytes INTEGER NOT NULL, bytes_uploaded INTEGER DEFAULT 0, last_push INTEGER NOT NULL, FOREIGN KEY(source_id) REFERENCES sources(source_id))", ())?;

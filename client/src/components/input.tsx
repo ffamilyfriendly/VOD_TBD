@@ -1,4 +1,9 @@
-import { HTMLInputTypeAttribute } from "react";
+import {
+  ChangeEvent,
+  Dispatch,
+  HTMLInputTypeAttribute,
+  SetStateAction,
+} from "react";
 import { I_Common, styles } from "./common";
 import style from "./input.module.css";
 
@@ -15,6 +20,7 @@ interface I_InputOptions extends I_Common {
   max_length?: number;
   pattern?: string;
   required?: boolean;
+  set_state?: Dispatch<SetStateAction<any>>;
 }
 
 export default function Input({
@@ -24,6 +30,18 @@ export default function Input({
   colour = "surface",
   ...props
 }: I_InputOptions) {
+  function handle_change(e: ChangeEvent<HTMLInputElement>) {
+    if (props.initial && !props.set_state) {
+      console.warn(
+        "<Input/> component passed 'initial' property but no 'set_state'.\nThis will cause the initial value to be immutable"
+      );
+    }
+
+    if (props.set_state) {
+      props.set_state(e.target.value);
+    }
+  }
+
   return (
     <div
       className={styles(
@@ -36,7 +54,9 @@ export default function Input({
     >
       <label className={style.label}>{label}</label>
       <input
+        step={"any"}
         placeholder={placeholder}
+        onChange={handle_change}
         className={style.input}
         type={props.type}
         value={props.initial}

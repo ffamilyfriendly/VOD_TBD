@@ -92,7 +92,6 @@ export default function Edit() {
       <SourceProvider>
         <Sources id={id} />
       </SourceProvider>
-      <ProgressBar value={40} />
     </main>
   );
 }

@@ -12,8 +12,8 @@ pub fn ensure_tables() -> Result<(), rusqlite::Error> {
     con.execute("CREATE TABLE IF NOT EXISTS push_urls (user_id INTEGER PRIMARY KEY, url TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id))", ())?;
 
     // Entity
-    con.execute("CREATE TABLE IF NOT EXISTS entity (entity_id UUID PRIMARY KEY, parent UUID REFERENCES entity(entity_id) ON DELETE SET NULL, entity_type INTEGER NOT NULL)", ())?;
-    con.execute("CREATE TABLE IF NOT EXISTS metadata (metadata_id UUID PRIMARY KEY REFERENCES entity(entity_id) ON DELETE CASCADE, thumbnail TEXT, backdrop TEXT, description TEXT, ratings INTEGER, language TEXT, release_date DATE)", ())?;
+    con.execute("CREATE TABLE IF NOT EXISTS entity (entity_id UUID PRIMARY KEY, parent UUID REFERENCES entity(entity_id) ON DELETE SET NULL, entity_type INTEGER NOT NULL, added TIMESTAMP DEFAULT (datetime('now','localtime')))", ())?;
+    con.execute("CREATE TABLE IF NOT EXISTS metadata (metadata_id UUID PRIMARY KEY REFERENCES entity(entity_id) ON DELETE CASCADE, title TEXT DEFAULT \"entity\", thumbnail TEXT, backdrop TEXT, description TEXT, ratings INTEGER, language TEXT, release_date DATE)", ())?;
     
     // tags
     con.execute("CREATE TABLE IF NOT EXISTS tags (tag_id UUID PRIMARY KEY, title TEXT, colour TEXT)", ())?;

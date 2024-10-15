@@ -74,6 +74,10 @@ class Upload {
       this.cursor += this.chunkSize;
       this.chunk_timings.push(Date.now() - request_start);
 
+      if (this.cursor >= this.file.size) {
+        this.done = true;
+      }
+
       if (this.callback) {
         const avg_time_ms =
           this.chunk_timings.reduce((a, b) => a + b) /
@@ -88,10 +92,6 @@ class Upload {
           100
         );
         this.callback(as_percentage, avg_time_ms, est_time_left);
-      }
-
-      if (this.cursor > this.file.size) {
-        this.done = true;
       }
     } else return Err(res.error);
 
@@ -139,9 +139,42 @@ export enum EntityType {
 }
 
 export interface Entity {
-  entity_id: String;
-  parent?: String;
+  entity_id: string;
+  parent?: string;
   entity_type: EntityType;
+}
+
+export interface MetaData {
+  metadata_id: string;
+  title?: string;
+  thumbnail?: string;
+  backdrop?: string;
+  description?: string;
+  ratings?: number;
+  language?: string;
+  release_date?: string;
+}
+
+export interface MetadataUpdate {
+  thumbnail?: string;
+  backdrop?: string;
+  description?: string;
+  ratings?: number;
+  release_date?: string;
+  title?: string;
+  language?: string;
+}
+
+export interface Collection {
+  entity: Entity;
+  metadata: MetaData;
+}
+
+export interface EntitySelectOptions {
+  language?: string;
+  title_exact?: string;
+  ratings_above?: number;
+  ratings_below?: number;
 }
 
 export default class Content {
@@ -167,6 +200,37 @@ export default class Content {
   async get_sources(parent: string) {
     return this.client.fetch<Source[]>(`/content/${parent}/sources`, {
       method: "GET",
+    });
+  }
+
+  async get_source(source_id: string) {
+    return this.client.fetch<Source>(`/content/JHBOY/source/${source_id}`, {
+      method: "GET",
+    });
+  }
+
+  async get_metadata(entity_id: string) {
+    return this.client.fetch<MetaData>(`/content/${entity_id}/metadata`, {
+      method: "GET",
+    });
+  }
+
+  /**
+   *
+   * /<parent>/collections?<data..>
+   */
+
+  async get_collections(parent: string, filters: EntitySelectOptions) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.client.fetch<Collection[]>(
+      `/content/${parent}/collections?${params}`
+    );
+  }
+
+  async update_metadata(entity_id: string, update: MetadataUpdate) {
+    return this.client.fetch<number>(`/content/${entity_id}/metadata`, {
+      method: "PATCH",
+      data: update,
     });
   }
 

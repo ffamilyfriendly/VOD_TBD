@@ -27,7 +27,7 @@ fn rocket() -> _ {
         rocket = rocket.mount(route.base, route.routes);
     }
 
-    let allowed_methods: AllowedMethods = ["Get", "Post", "Delete", "Options"]
+    let allowed_methods: AllowedMethods = ["Get", "Post", "Delete", "Options", "Patch"]
     .iter()
     .map(|s| FromStr::from_str(s).unwrap())
     .collect();

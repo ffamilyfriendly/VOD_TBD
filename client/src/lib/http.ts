@@ -2,7 +2,7 @@ import { API_PATH, Err, Ok, Result } from "./client";
 
 export interface I_HttpOptions {
   data?: Object;
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: [string, string][];
 }
 

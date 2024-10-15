@@ -15,6 +15,7 @@ import { Err, Ok, Result } from "@/lib/client";
 import Style from "./upload.module.css";
 import ProgressBar from "@/components/ProgressBar";
 import { ms_to_time } from "@/lib/helpers";
+import { SourceContext } from "./[id]/page";
 
 interface I_PreviewData {
   thumbnail: Blob;
@@ -108,6 +109,7 @@ export default function UploadModal(props: I_UploadModal) {
     eta: number;
   } | null>(null);
   const animation_frame_id = useRef<number | null>(null);
+  const { setSources } = useContext(SourceContext)!;
 
   const client = useContext(ClientContext);
 
@@ -129,7 +131,22 @@ export default function UploadModal(props: I_UploadModal) {
         animation_frame_id.current = requestAnimationFrame(() => {
           set_progress({ progress: percent_done, eta: eta_ms });
         });
+
+        if (upload.done) {
+          client.content.get_source(upload.id).then((res) => {
+            if (res.ok) {
+              setSources((s) => {
+                s.push(res.value);
+                return s;
+              });
+              props.setModal(false);
+            } else {
+              // ERROR
+            }
+          });
+        }
       };
+
       upload.start();
     } else {
       console.error(res.error);
