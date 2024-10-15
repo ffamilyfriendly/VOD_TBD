@@ -63,20 +63,45 @@ function CollectionElement({ data }: { data: Collection }) {
   );
 }
 
+export function ContentsTable(props: {
+  entity_type: EntityType;
+  parent?: string;
+}) {
+  const client = useContext(ClientContext);
+  const [collections, set_collections] = useState<Collection[]>();
+
+  useEffect(() => {
+    client.content
+      .get_collections(props.parent || "root", {
+        entity_type: props.entity_type,
+      })
+      .then((res) => {
+        if (res.ok) {
+          set_collections(res.value);
+        } else {
+          console.error(res.error);
+        }
+      });
+  }, [client.content, props.entity_type, props.parent]);
+
+  return (
+    <table className={common.table}>
+      <tr>
+        <th>id</th>
+        <th>title</th>
+        <th>options</th>
+      </tr>
+      {collections?.map((s) => (
+        <CollectionElement key={s.entity.entity_id} data={s} />
+      ))}
+    </table>
+  );
+}
+
 export default function Content() {
   const client = useContext(ClientContext);
   const router = useRouter();
   const [collections, set_collections] = useState<Collection[]>();
-
-  useEffect(() => {
-    client.content.get_collections("root", {}).then((res) => {
-      if (res.ok) {
-        set_collections(res.value);
-      } else {
-        console.error(res.error);
-      }
-    });
-  }, [client.content]);
 
   async function createNewEntity() {
     const res = await client.content.create_entity(EntityType.Movie);
@@ -104,22 +129,13 @@ export default function Content() {
         New
       </Button>
       <Title>Filmer</Title>
-      <table className={common.table}>
-        <tr>
-          <th>id</th>
-          <th>title</th>
-          <th>options</th>
-        </tr>
-
-        {collections?.map((s) => (
-          <CollectionElement key={s.entity.entity_id} data={s} />
-        ))}
-      </table>
+      <ContentsTable entity_type={EntityType.Movie} />
 
       <Button on_click={createFromId} theme="primary">
         New
       </Button>
       <Title>Series</Title>
+      <ContentsTable entity_type={EntityType.Series} />
     </main>
   );
 }

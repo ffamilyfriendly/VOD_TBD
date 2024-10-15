@@ -17,7 +17,7 @@ pub fn create_entity(token: ActiveToken, input: Json<NewEntity>) -> Result<Entit
     input.validate()?;
     token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageContent)?;
 
-    let entity = content_manager::create_entity(input.entity_type.clone().into(), input.parent.clone())?;
+    let entity = content_manager::create_entity(input.entity_type.clone().into(), input.parent.clone(), None)?;
     content_manager::create_empty_metadata(&entity.entity_id)?;
 
     Ok(entity.into())
@@ -45,7 +45,7 @@ pub fn create_source(token: ActiveToken, input: Json<NewSource>) -> Result<Sourc
 
     // Ensure only entities which should hold sources can hold sources
     match parent.entity_type {
-        EntityType::Series | EntityType::SeriesSeason => return Err(ApiErrors::CantHoldSource(parent.entity_type.into()).into()),
+        EntityType::Series | EntityType::SeriesSeason => return Err(ApiErrors::CantHoldSource.into()),
         _ => { }
     }
 

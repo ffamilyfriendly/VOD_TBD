@@ -13,9 +13,11 @@ import {
 import Button, { SubmitButton } from "@/components/button";
 import { Center, STYLE, styles } from "@/components/common";
 import cs from "@/styles/common.module.css";
+import { Collection } from "@/lib/content";
 
 interface I_MetaData {
   id: string;
+  data?: Collection;
 }
 
 function Preview(props: {}) {
@@ -34,22 +36,17 @@ export default function MetaData(props: I_MetaData) {
   const [release_date, set_release_date] = useState<string>();
 
   useEffect(() => {
-    client.content.get_metadata(props.id).then((res) => {
-      if (res.ok) {
-        console.log("ok", res.value);
-        const meta = res.value;
-        set_title(meta.title);
-        set_thumbnail(meta.thumbnail);
-        set_backdrop(meta.backdrop);
-        set_description(meta.description);
-        set_ratings(meta.ratings?.toString());
-        set_language(meta.language);
-        set_release_date(meta.release_date);
-      } else {
-        console.error(res.error);
-      }
-    });
-  }, [client, props.id]);
+    if (props.data) {
+      const meta = props.data?.metadata;
+      set_title(meta.title);
+      set_thumbnail(meta.thumbnail);
+      set_backdrop(meta.backdrop);
+      set_description(meta.description);
+      set_ratings(meta.ratings?.toString());
+      set_language(meta.language);
+      set_release_date(meta.release_date);
+    }
+  }, [props.data]);
 
   function handle_submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

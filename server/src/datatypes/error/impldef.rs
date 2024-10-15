@@ -31,7 +31,7 @@ fn get_status(e: &Error) -> Status {
         Error::ApiError(e) => match e {
             ApiErrors::WrongCredentialsProvided | ApiErrors::Missing | ApiErrors::MissesPermission(_) => Status::Unauthorized,
             ApiErrors::WrongTokenTypeProvided(_, _) | ApiErrors::Invalid => Status::BadRequest,
-            ApiErrors::CantHoldSource(_) => Status::NotAcceptable
+            ApiErrors::CantHoldSource => Status::NotAcceptable
         },
 
         Error::InviteErr(e) => match e {

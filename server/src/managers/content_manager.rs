@@ -1,3 +1,4 @@
+use core::fmt;
 use std::io::Write;
 /* 
 source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL, uploaded_by INTEGER NOT NULL, FOREIGN KEY(uploaded_by) REFERENCES users(id)
@@ -19,6 +20,7 @@ use super::db::get_connection;
 // "CREATE TABLE IF NOT EXISTS entity (entity_id UUID PRIMARY KEY, parent UUID REFERENCES entity(entity_id) ON DELETE SET NULL, entity_type TEXT NOT NULL)"
 
 #[derive(Serialize, Deserialize, Clone)]
+#[repr(u8)] // Ensures that the enum variants are represented as numbers (u8 here)
 pub enum EntityType {
     Movie,
     Series,
@@ -39,40 +41,30 @@ impl From<u8> for EntityType {
     }
 }
 
-impl From<EntityType> for String {
-    fn from(value: EntityType) -> Self {
-        let v = match value {
-            EntityType::Movie => "Movie",
-            EntityType::Series => "Series",
-            EntityType::SeriesEpisode => "Episode",
-            EntityType::SeriesSeason => "Season",
-            EntityType::UNKNOWN => "Unknown"
-        };
-        v.to_owned()
-    }
-}
-
 #[derive(Serialize)]
 pub struct Entity {
     pub entity_id: String,
     pub parent: Option<String>,
-    pub entity_type: EntityType
+    pub entity_type: EntityType,
+    pub episode: Option<u16>
 }
 
-pub fn create_entity(entity_type: EntityType, parent: Option<String>) -> Result<Entity, Error> {
+pub fn create_entity(entity_type: EntityType, parent: Option<String>, order: Option<u16>) -> Result<Entity, Error> {
     let id = Uuid::new_v4();
     let con = get_connection()?;
-    let mut stmt = con.prepare("INSERT INTO entity (entity_id, parent, entity_type) VALUES (?1, ?2, ?3)")?;
+    let mut stmt = con.prepare("INSERT INTO entity (entity_id, parent, entity_type, episode) VALUES (?1, ?2, ?3, ?4)")?;
     stmt.raw_bind_parameter(1, id.to_string())?;
     stmt.raw_bind_parameter(2, &parent)?;
     stmt.raw_bind_parameter(3, entity_type.clone() as u8)?;
+    stmt.raw_bind_parameter(4, order)?;
 
     stmt.raw_execute()?;
 
     Ok(Entity {
         entity_id: id.to_string(),
         parent: parent,
-        entity_type: entity_type
+        entity_type: entity_type,
+        episode: order
     })
 }
 
@@ -84,7 +76,8 @@ pub fn get_entity(entity_id: &str) -> Result<Entity, Error> {
         Ok(Entity {
             entity_id: row.get(0)?,
             parent: row.get(1)?,
-            entity_type: num.into()
+            entity_type: num.into(),
+            episode: row.get(3)?
         }  
     )});
 
@@ -230,7 +223,8 @@ pub struct EntitySelectOptions {
     pub language: Option<String>,
     pub title_exact: Option<String>,
     pub ratings_above: Option<f64>,
-    pub ratings_below: Option<f64>
+    pub ratings_below: Option<f64>,
+    pub entity_type: Option<u8>
 }
 
 pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<Collection>, Error> {
@@ -258,6 +252,11 @@ pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<
         params.push(ratings_below);
     }
 
+    if let Some(entity_type) = &filter.entity_type {
+        query += " e.entity_type = ? AND";
+        params.push(entity_type);
+    }
+
 
     // As entities without a parent (top level entities) has a parent value of null
     // which we need to check for with a specific sql syntax we check if parent is root
@@ -270,6 +269,8 @@ pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<
             params.push(&parent);
         }
     };
+
+    query += " ORDER BY e.episode";
 
     println!("STMT: {}", &query);
 
@@ -284,18 +285,19 @@ pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<
         let entity = Entity {
             entity_id: row.get(0)?,
             parent: row.get(1)?,
-            entity_type: ent_type.into()
+            entity_type: ent_type.into(),
+            episode: row.get(3)?
         };
 
         let metadata = MetaData {
-            metadata_id: row.get(3)?,
-            title: row.get(4)?,
-            thumbnail: row.get(5)?,
-            backdrop: row.get(6)?,
-            description: row.get(7)?,
-            ratings: row.get(8)?,
-            language: row.get(9)?,
-            release_date: row.get(10)?
+            metadata_id: row.get(5)?,
+            title: row.get(6)?,
+            thumbnail: row.get(7)?,
+            backdrop: row.get(8)?,
+            description: row.get(9)?,
+            ratings: row.get(10)?,
+            language: row.get(11)?,
+            release_date: row.get(12)?
         };
 
         result.push(Collection { entity, metadata });

@@ -1,7 +1,7 @@
 "use client";
 import { ClientContext } from "@/components/ClientProvider";
 import { Title } from "@/components/common";
-import { Source } from "@/lib/content";
+import { Collection, EntityType, Source, to_entitytype } from "@/lib/content";
 import { useParams } from "next/navigation";
 import {
   Dispatch,
@@ -18,6 +18,7 @@ import { default as SourceElement } from "./source";
 import MetaData from "./metadata";
 import ProgressBar from "@/components/ProgressBar";
 import { createContext } from "react";
+import { ContentsTable } from "../page";
 
 interface I_ContextType {
   sources: Source[];
@@ -79,19 +80,65 @@ function Sources(props: { id: string }) {
   );
 }
 
+function ChildrenTable(props: { data?: Collection }) {
+  if (!props.data) return <p>loading...</p>;
+
+  const entity_type = to_entitytype(
+    props.data.entity.entity_type as unknown as string
+  );
+
+  const title = entity_type == EntityType.Series ? "Seasons" : "Episodes";
+  const show_child_types =
+    entity_type == EntityType.Series
+      ? EntityType.SeriesSeason
+      : EntityType.SeriesEpisode;
+
+  console.log(props.data);
+
+  return (
+    <div>
+      <Title>{title}</Title>
+      <ContentsTable
+        entity_type={show_child_types}
+        parent={props.data.entity.entity_id}
+      />
+    </div>
+  );
+}
+
 export default function Edit() {
   const { id } = useParams();
+  const [collection, set_collection] = useState<Collection>();
+  const client = useContext(ClientContext);
+
+  useEffect(() => {
+    if (!(id instanceof Array)) {
+      client.content.get_collection(id).then((res) => {
+        if (res.ok) {
+          set_collection(res.value);
+        }
+      });
+    }
+  }, [client.content, id]);
 
   if (id instanceof Array) return "no";
+
+  const entity_type = to_entitytype(
+    collection?.entity.entity_type as unknown as string
+  );
 
   return (
     <main>
       {" "}
       cum {id}
-      <MetaData id={id} />
+      <MetaData data={collection} id={id} />
       <SourceProvider>
         <Sources id={id} />
       </SourceProvider>
+      {entity_type !== EntityType.Movie &&
+        entity_type !== EntityType.SeriesEpisode && (
+          <ChildrenTable data={collection} />
+        )}
     </main>
   );
 }

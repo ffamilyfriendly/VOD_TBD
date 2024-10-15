@@ -135,7 +135,26 @@ export enum EntityType {
   Movie,
   Series,
   SeriesEpisode,
-  Folder,
+  SeriesSeason,
+}
+
+export function to_entitytype(x: string): EntityType {
+  switch (x) {
+    case "Series":
+      return EntityType.Series;
+      break;
+    case "Movie":
+      return EntityType.Movie;
+      break;
+    case "SeriesEpisode":
+      return EntityType.SeriesEpisode;
+      break;
+    case "SeriesSeason":
+      return EntityType.SeriesSeason;
+      break;
+    default:
+      return EntityType.Movie;
+  }
 }
 
 export interface Entity {
@@ -175,6 +194,7 @@ export interface EntitySelectOptions {
   title_exact?: string;
   ratings_above?: number;
   ratings_below?: number;
+  entity_type?: EntityType;
 }
 
 export default class Content {
@@ -232,6 +252,12 @@ export default class Content {
     return this.client.fetch<Collection[]>(
       `/content/${parent}/collections?${params}`
     );
+  }
+
+  async get_collection(id: string) {
+    return this.client.fetch<Collection>(`/content/${id}/collection`, {
+      method: "GET",
+    });
   }
 
   async update_metadata(entity_id: string, update: MetadataUpdate) {

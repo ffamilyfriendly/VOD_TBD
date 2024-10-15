@@ -4,7 +4,7 @@ use rocket::http::Status;
 use serde::{Deserialize, Serialize};
 use validator::ValidationErrors;
 
-use crate::managers::user_manager::UserPermissions;
+use crate::managers::{content_manager::EntityType, user_manager::UserPermissions};
 
 #[derive(thiserror::Error, Debug)]
 pub enum UserManagerErrors {
@@ -37,8 +37,8 @@ pub enum ApiErrors {
     Invalid,
 
     // Content related errors
-    #[error("Entity of type {0} cannot hold sources")]
-    CantHoldSource(String),
+    #[error("Entity of that type cannot hold sources")]
+    CantHoldSource,
 
     /// Access related errors
     #[error("This endpoint requires the `{0}` permission")]

@@ -130,7 +130,7 @@ pub async fn get_season_details(series_id: &u64, season: &u8) -> Result<SeasonDe
 }
 
 fn create_series_episode(episode: &SeriesEpisode, parent: String) -> Result<(), Error> {
-    let entity = content_manager::create_entity(content_manager::EntityType::SeriesEpisode, Some(parent))?;
+    let entity = content_manager::create_entity(content_manager::EntityType::SeriesEpisode, Some(parent), Some(episode.episode_number as u16))?;
     content_manager::create_empty_metadata(&entity.entity_id)?;
     content_manager::update_metadata(&entity.entity_id, MetadataUpdate { thumbnail: Some(format!("https://image.tmdb.org/t/p/w780{}", episode.still_path)), backdrop: None, description: Some(episode.overview.clone()), ratings: Some(episode.vote_average), language: None, release_date: episode.air_date.clone(), title: Some(episode.name.clone()) })?;
 
@@ -138,7 +138,7 @@ fn create_series_episode(episode: &SeriesEpisode, parent: String) -> Result<(), 
 }
 
 async fn create_series_season(season: &Season, series_id: &u64, parent: String) -> Result<(), Error> {
-    let entity = content_manager::create_entity(content_manager::EntityType::SeriesSeason, Some(parent))?;
+    let entity = content_manager::create_entity(content_manager::EntityType::SeriesSeason, Some(parent), Some(season.season_number as u16))?;
     content_manager::create_empty_metadata(&entity.entity_id)?;
     content_manager::update_metadata(&entity.entity_id, MetadataUpdate { thumbnail: Some(format!("https://image.tmdb.org/t/p/w780{}", season.poster_path)), backdrop: None, description: Some(season.overview.clone()), ratings: Some(season.vote_average), language: None, release_date: Some(season.air_date.clone()), title: Some(season.name.clone()) })?;
 
@@ -153,7 +153,7 @@ async fn create_series_season(season: &Season, series_id: &u64, parent: String) 
 }
 
 pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
-    let entity = content_manager::create_entity(content_manager::EntityType::Series, None)?;
+    let entity = content_manager::create_entity(content_manager::EntityType::Series, None, None)?;
     content_manager::create_empty_metadata(&entity.entity_id)?;
 
     let series_meta = get_series_details(series_id).await?;
