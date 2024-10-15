@@ -183,6 +183,13 @@ export default class Content {
     this.client = c;
   }
 
+  async create_series_from_id(tmdb_id: number) {
+    return this.client.fetch<string>("/content/series/import", {
+      method: "POST",
+      data: { tmdb_id: tmdb_id },
+    });
+  }
+
   async create_entity(entity_type: EntityType, parent?: string) {
     return this.client.fetch<Entity>("/content/entity", {
       method: "POST",

@@ -1,18 +1,65 @@
 "use client";
 import Button from "@/components/button";
 import { Title } from "@/components/common";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import common from "@/styles/common.module.css";
 import { ClientContext } from "@/components/ClientProvider";
 import { Collection, EntityType } from "@/lib/content";
 import { useRouter } from "next/navigation";
+import { MdDeleteForever, MdOpenInFull } from "react-icons/md";
+import ContextMenu from "@/components/ContextMenu";
 
 function CollectionElement({ data }: { data: Collection }) {
+  const [show_context, set_show_context] = useState(false);
+  const [pos, set_pos] = useState<{ top: number; left: number } | null>();
+  const r = useRef<HTMLTableCellElement>(null);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (r.current) {
+      const position = r.current.getBoundingClientRect();
+      set_pos({ top: position.top, left: position.left });
+    }
+  }, [r]);
+
+  function delete_entity() {
+    alert("no");
+  }
+
+  function view_entity() {
+    router.push(`/admin/content/${data.entity.entity_id}`);
+  }
+
   return (
-    <tr>
-      <td>{data.entity.entity_id}</td>
-      <td>{data.metadata.title}</td>
-    </tr>
+    <>
+      <tr>
+        <td>{data.entity.entity_id}</td>
+        <td>{data.metadata.title}</td>
+        <td onClick={() => set_show_context(true)} ref={r}>
+          ...
+        </td>
+      </tr>
+      {pos && show_context && (
+        <ContextMenu
+          pos_top={pos.top}
+          pos_left={pos.left}
+          state={set_show_context}
+          entries={[
+            {
+              text: "View",
+              icon: MdOpenInFull,
+              on_click: view_entity,
+            },
+            {
+              text: "Delete",
+              icon: MdDeleteForever,
+              on_click: delete_entity,
+            },
+          ]}
+        />
+      )}
+    </>
   );
 }
 
@@ -41,6 +88,16 @@ export default function Content() {
     }
   }
 
+  async function createFromId() {
+    const res = await client.content.create_series_from_id(1396);
+
+    if (res.ok) {
+      console.log("OK");
+    } else {
+      console.error(res.error);
+    }
+  }
+
   return (
     <main>
       <Button on_click={createNewEntity} theme="primary">
@@ -51,8 +108,6 @@ export default function Content() {
         <tr>
           <th>id</th>
           <th>title</th>
-          <th>priority</th>
-          <th>size</th>
           <th>options</th>
         </tr>
 
@@ -60,6 +115,11 @@ export default function Content() {
           <CollectionElement key={s.entity.entity_id} data={s} />
         ))}
       </table>
+
+      <Button on_click={createFromId} theme="primary">
+        New
+      </Button>
+      <Title>Series</Title>
     </main>
   );
 }

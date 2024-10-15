@@ -36,6 +36,10 @@ pub enum ApiErrors {
     #[error("Token was provided but invalid")]
     Invalid,
 
+    // Content related errors
+    #[error("Entity of type {0} cannot hold sources")]
+    CantHoldSource(String),
+
     /// Access related errors
     #[error("This endpoint requires the `{0}` permission")]
     MissesPermission(UserPermissions),
@@ -74,7 +78,10 @@ pub enum Error {
     JSONParser(#[from] serde_json::Error),
 
     #[error(transparent)]
-    FFmpeg(FFmpegErrors)
+    FFmpeg(FFmpegErrors),
+
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 }
 
 #[derive(Serialize, Deserialize)]

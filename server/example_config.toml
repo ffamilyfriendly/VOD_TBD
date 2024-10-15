@@ -1,0 +1,5 @@
+[storage]
+media_dir = "."
+
+[secrets]
+tmdb_key = "secret"

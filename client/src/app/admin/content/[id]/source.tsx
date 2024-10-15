@@ -38,7 +38,7 @@ export default function Source({ data, ...props }: I_Source) {
   const [show_context, set_show_context] = useState(false);
   const client = useContext(ClientContext);
 
-  const { setSources } = useContext(SourceContext)!;
+  const { setSources, sources } = useContext(SourceContext)!;
 
   if (data.audio_codec) {
     console.log("is audio supported? ", codec_supported(data.audio_codec));
@@ -68,7 +68,7 @@ export default function Source({ data, ...props }: I_Source) {
       const position = r.current.getBoundingClientRect();
       set_pos({ top: position.top, left: position.left });
     }
-  }, [r]);
+  }, [r, sources]);
 
   return (
     <>

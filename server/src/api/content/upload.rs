@@ -2,10 +2,9 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::managers::content_manager::{self, Entity, MetaData, MetadataUpdate, Source, Upload};
+use crate::managers::content_manager::{self, Entity, EntityType, MetaData, MetadataUpdate, Source, Upload};
 use crate::utils::jwt::ActiveToken;
-use crate::datatypes::error::definition::Result;
-
+use crate::datatypes::error::definition::{ApiErrors, Result};
 
 #[derive(Validate, Serialize, Deserialize)]
 pub struct NewEntity {
@@ -41,6 +40,14 @@ pub struct NewSource {
 pub fn create_source(token: ActiveToken, input: Json<NewSource>) -> Result<Source> {
     input.validate()?;
     token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageContent)?;
+
+    let parent = content_manager::get_entity(&input.parent)?;
+
+    // Ensure only entities which should hold sources can hold sources
+    match parent.entity_type {
+        EntityType::Series | EntityType::SeriesSeason => return Err(ApiErrors::CantHoldSource(parent.entity_type.into()).into()),
+        _ => { }
+    }
 
     let source = content_manager::create_source(input.parent.clone(), input.size, token.uid)?;
     content_manager::create_upload(&source.source_id, &input.size, input.filetype.clone())?;

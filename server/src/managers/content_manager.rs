@@ -11,6 +11,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 
 use crate::datatypes::error::definition::Error;
+use crate::utils::config::load_config;
 use crate::utils::ffmpeg;
 
 use super::db::get_connection;
@@ -35,6 +36,19 @@ impl From<u8> for EntityType {
             3 => EntityType::SeriesSeason,
             _ => EntityType::UNKNOWN
         }
+    }
+}
+
+impl From<EntityType> for String {
+    fn from(value: EntityType) -> Self {
+        let v = match value {
+            EntityType::Movie => "Movie",
+            EntityType::Series => "Series",
+            EntityType::SeriesEpisode => "Episode",
+            EntityType::SeriesSeason => "Season",
+            EntityType::UNKNOWN => "Unknown"
+        };
+        v.to_owned()
     }
 }
 
@@ -479,19 +493,22 @@ pub fn delete_source(id: &str) -> Result<usize, Error> {
 /// # Returns
 /// a Result containing a Upload struct representing the upload
 pub fn write_to_upload(id: &str, bytes: &[u8]) -> Result<Upload, Error> {
+    let conf = load_config().expect("could not load config");
     let mut upl = get_upload(id)?;
+
+    let file_location = format!("{}/{}.{}", conf.storage.media_dir, id, &upl.filetype);
 
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(format!("./{}.{}", id, &upl.filetype))?;
+        .open(&file_location)?;
 
     file.write_all(bytes)?;
     update_upload(id, bytes.len())?;
     upl.bytes_uploaded += bytes.len() as u64;
 
     if upl.bytes_uploaded >= upl.total_bytes {
-        let probed = ffmpeg::probe_file_codec(&format!("./{}.{}", id, &upl.filetype))?;
+        let probed = ffmpeg::probe_file_codec(&file_location)?;
         // TODO: update the source "video_codec" and "audio_codec" with the probed codecs
 
         println!("video: {:?}\naudio: {:?}", probed.video, probed.audio);
