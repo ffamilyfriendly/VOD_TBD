@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{datatypes::error::definition::Error, utils::config::load_config};
 
-use super::content_manager::{self, MetadataUpdate};
+use super::{content_manager::{self, MetadataUpdate}, tag_manager};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MovieResult {
@@ -158,6 +158,28 @@ pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
 
     let series_meta = get_series_details(series_id).await?;
 
+    for genre in series_meta.genres {
+        let id_as_string = genre.id.to_string();
+
+        // Try to fetch the genre as a tag if it already exists...
+        let tag = match tag_manager::get_tag(&id_as_string) {
+            Ok(t) => t,
+            Err(e) => match e {
+
+                Error::Database(db_error) => match db_error {
+                    // or create it if it does not
+                    rusqlite::Error::QueryReturnedNoRows => tag_manager::create_known_tag(id_as_string, genre.name, get_preset_colour(genre.id))?,
+                    any_error => Err(any_error)?
+                },
+
+                any_error => Err(any_error)?
+            }
+        };
+
+        // Apply the genre tag to the content
+        tag_manager::tag_content(&tag.tag_id, &entity.entity_id)?;
+    }
+
     content_manager::update_metadata(&entity.entity_id, MetadataUpdate {
         backdrop: Some(format!("https://image.tmdb.org/t/p/w780{}", series_meta.backdrop_path)),
         thumbnail: Some(format!("https://image.tmdb.org/t/p/w780{}", series_meta.poster_path)),
@@ -174,4 +196,22 @@ pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+/// Function that returns a default colour for tags from tmdb
+pub fn get_preset_colour(id: u64) -> String {
+    match id {
+        // Drama
+        16 => "#800020",
+        // Crime
+        80 => "#2C3E50",
+        // Comedy
+        35 => "#FFD700",
+        // Mystery
+        9648 => "#4B0082",
+        // Thriller
+        53 => "#8B0000",
+        // Catchall
+        _ => "#800020",
+    }.to_owned()
 }

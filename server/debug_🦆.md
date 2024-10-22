@@ -18,9 +18,11 @@ With these 3 distinct entity types it _should_ be relativly easy to make sure a 
 
 ## needs doing
 
-- [] fix serialization of entity.entity_type. For some reason it serializes as a string when I'd rather it serializes as number
-- [] add more search options to get_collections
-- [] add support for tagging entities
-- [] make tmdb automatically add tags (if not exist) for genres / their tagging system
-- [] add get_collections support for tags
-- [] add playback support for normal mp4 files
+- [ ] fix serialization of entity.entity_type. For some reason it serializes as a string when I'd rather it serializes as number
+- [ ] add more search options to get_collections
+- [ ] add support for tagging entities
+  - [x] on backend manager
+  - [ ] as API routes
+- [x] make tmdb automatically add tags (if not exist) for genres / their tagging system
+- [ ] add get_collections support for tags
+- [ ] add playback support for normal mp4 files

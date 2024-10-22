@@ -10,6 +10,7 @@ use argon2::{
     },
     Argon2
 };
+use rusqlite::Row;
 use serde::Serialize;
 
 
@@ -71,20 +72,20 @@ pub struct User {
     pub used_invite: String
 }
 
+impl TryFrom<&Row<'_>> for User {
+    type Error = rusqlite::Error;
+    fn try_from(row: &Row<'_>) -> Result<Self, Self::Error> {
+        Ok(User { id: row.get(0)?, email: row.get(1)?, name: row.get(2)?, password: row.get(3)?, flags: PermissionsResolver { int_rep: row.get(4)? }, used_invite: row.get(5)? })
+    }
+}
+
 /// gets a user with a specified ID. Will throw NotFound if no user was found
 pub fn get_user(user_email: &str) -> Result<User, Error> {
     let db = db::get_connection()?;
 
     let mut stmt = db.prepare("SELECT * FROM users WHERE email = ?")?;
-    match stmt.query_row([user_email], |f| { 
-        Ok(User { 
-            id:         f.get(0)?,
-            email:      f.get(1)?,
-            name:       f.get(2)?,
-            password:   f.get(3)?,
-            flags:      PermissionsResolver { int_rep: f.get(4)? },
-            used_invite: f.get(5)?
-         })
+    match stmt.query_row([user_email], |row: &Row<'_>| { 
+        Ok(User::try_from(row)?)
      }) {
         Ok(d) => Ok(d),
         Err(e) => {
@@ -131,6 +132,14 @@ pub fn insert_user(name: &str, email: &str, password: &str, flags: u8, invite: &
             used_invite: invite.to_string()
         }
     )
+}
+
+pub fn get_users() -> Result<Vec<User>, Error> {
+    let con = db::get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM users")?;
+    let rows: Vec<User> = stmt.query_map([], |row| User::try_from(row))?.collect::<Result<Vec<User>, _>>()?;
+
+    Ok(rows)
 }
 
 /// Deletes the specified user. Will return a usize 1 if a user was found and deleted and 0 is no user was deleted due to not existing
