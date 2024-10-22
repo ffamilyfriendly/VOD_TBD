@@ -1,11 +1,12 @@
-use config::Map;
 use rusqlite::Row;
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::datatypes::error::definition::Error;
 
 use super::db;
 
+#[derive(Serialize)]
 pub struct Tag {
     pub tag_id: String,
     pub title: String,
@@ -75,7 +76,7 @@ pub fn untag_content(tag_id: &str, entity_id: &str) -> Result<usize, Error> {
 /// Returns all tags that exist on an entity
 pub fn get_tags_on_entity(entity_id: &str) -> Result<Vec<Tag>, Error> {
     let con = db::get_connection()?;
-    let mut stmt = con.prepare("SELECT t.tag_id, t.title, t.colour FROM tags_assoc AS ta JOIN tags AS t on t.tag_id = ta.entity_id WHERE entity_id = ?")?;
+    let mut stmt = con.prepare("SELECT t.tag_id, t.title, t.colour FROM tags_assoc AS ta JOIN tags AS t on t.tag_id = ta.tag_id WHERE ta.entity_id = ?")?;
     let tags = stmt.query_map([entity_id], |row| Tag::try_from(row))?.collect::<Result<Vec<Tag>, _>>()?;
 
     Ok(tags)
@@ -86,6 +87,13 @@ pub fn get_all_tags() -> Result<Vec<Tag>, Error> {
     let con = db::get_connection()?;
     let mut stmt = con.prepare("SELECT * FROM tags")?;
     let tags = stmt.query_map([], |row| Tag::try_from(row))?.collect::<Result<Vec<Tag>,_>>()?;
+    Ok(tags)
+}
+
+pub fn get_tags_with_title(title: &str) -> Result<Vec<Tag>, Error> {
+    let con = db::get_connection()?;
+    let mut stmt = con.prepare("SELECT * FROM tags WHERE title LIKE '%' || ? || '%'")?;
+    let tags = row_to_vec!(stmt, [title], Tag);
     Ok(tags)
 }
 

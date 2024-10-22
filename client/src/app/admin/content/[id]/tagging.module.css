@@ -1,0 +1,42 @@
+.tag_element {
+  background-color: rgba(var(--tag_colour), 0.5);
+  padding: 0.5em;
+  font-size: small;
+  border-radius: 0.75em;
+  border: 2px solid rgb(var(--tag_colour));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  transition: 0.3s;
+  transition-timing-function: cubic-bezier(0.075, 0.82, 0.165, 1);
+}
+
+.tag_remove_button {
+  background-color: transparent;
+  border-color: transparent;
+  color: inherit;
+  transform: translateX(150%);
+  transition: 0.3s;
+  transition-timing-function: cubic-bezier(0.075, 0.82, 0.165, 1);
+  cursor: pointer;
+}
+
+.tag_element:hover > .tag_remove_button {
+  transform: translateX(0);
+}
+
+.appliable_tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.appliable_tag > button {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}

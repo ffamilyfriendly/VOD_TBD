@@ -19,15 +19,15 @@ pub struct NewInvite {
 
 #[post("/create", data = "<input>")]
 pub fn create_invite(token: ActiveToken, input: Json<NewInvite>) -> Result<Invite> {
+    has_permission!(token, ManageUsers);
     input.validate()?;
-    token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageUsers)?;
     
     Ok(invite_manager::create_invite(&input.id.replace(" ", "-"), input.expires, input.uses, Some(token.uid))?.into())
 }
 
 #[delete("/<id>")]
 pub fn delete_invite(token: ActiveToken, id: &str) -> Result<usize> {
-    token.get_perms().has_or_err(&crate::managers::user_manager::UserPermissions::ManageUsers)?;
+    has_permission!(token, ManageUsers);
     
     Ok(invite_manager::delete_invite(&id)?.into())
 }

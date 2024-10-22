@@ -18,3 +18,14 @@
   background-color: rgb(var(--color-secondary-500));
   color: rgb(var(--on-secondary));
 }
+
+.bordered {
+  color: inherit;
+  background-color: rgb(var(--color-surface-500));
+  border: 1px solid rgb(var(--color-surface-50) / 0.1);
+  border-radius: 0.5em;
+}
+
+.tetriary {
+  color: inherit;
+}

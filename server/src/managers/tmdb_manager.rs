@@ -202,7 +202,7 @@ pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
 pub fn get_preset_colour(id: u64) -> String {
     match id {
         // Drama
-        16 => "#800020",
+        18 => "#800020",
         // Crime
         80 => "#2C3E50",
         // Comedy

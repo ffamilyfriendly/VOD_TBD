@@ -16,9 +16,10 @@ import Button from "@/components/button";
 import common from "@/styles/common.module.css";
 import { default as SourceElement } from "./source";
 import MetaData from "./metadata";
-import ProgressBar from "@/components/ProgressBar";
 import { createContext } from "react";
 import { ContentsTable } from "../page";
+import Style from "./page.module.css";
+import { Tagging } from "./tagging";
 
 interface I_ContextType {
   sources: Source[];
@@ -128,13 +129,13 @@ export default function Edit() {
   );
 
   return (
-    <main>
+    <main className={Style.main}>
       {" "}
-      cum {id}
       <MetaData data={collection} id={id} />
       <SourceProvider>
         <Sources id={id} />
       </SourceProvider>
+      {collection && <Tagging entity_id={collection?.entity.entity_id} />}
       {entity_type !== EntityType.Movie &&
         entity_type !== EntityType.SeriesEpisode && (
           <ChildrenTable data={collection} />

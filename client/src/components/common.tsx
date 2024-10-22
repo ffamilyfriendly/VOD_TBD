@@ -69,7 +69,8 @@ export type theme =
   | "surface"
   | "error"
   | "warning"
-  | "bordered";
+  | "bordered"
+  | "tetriary";
 
 export const STYLE = {
   THEME: {

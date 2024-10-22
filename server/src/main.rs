@@ -1,4 +1,5 @@
 #[macro_use] extern crate rocket;
+#[macro_use] mod macros;
 pub mod managers;
 pub mod api;
 pub mod datatypes;
@@ -27,7 +28,7 @@ fn rocket() -> _ {
         rocket = rocket.mount(route.base, route.routes);
     }
 
-    let allowed_methods: AllowedMethods = ["Get", "Post", "Delete", "Options", "Patch"]
+    let allowed_methods: AllowedMethods = ["Get", "Post", "Delete", "Options", "Patch", "Put"]
     .iter()
     .map(|s| FromStr::from_str(s).unwrap())
     .collect();

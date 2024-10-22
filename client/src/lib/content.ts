@@ -197,6 +197,12 @@ export interface EntitySelectOptions {
   entity_type?: EntityType;
 }
 
+export interface Tag {
+  tag_id: string;
+  title: string;
+  colour: string;
+}
+
 export default class Content {
   client: Client;
   constructor(c: Client) {
@@ -275,5 +281,43 @@ export default class Content {
 
   upload_file(source_id: string, file: File) {
     return new Upload(this.client, source_id, file);
+  }
+
+  async get_entity_tags(entity_id: string) {
+    return this.client.fetch<Tag[]>(`/content/${entity_id}/tags`, {
+      method: "GET",
+    });
+  }
+
+  async add_tag_to_entity(entity_id: string, tag_id: string) {
+    return this.client.fetch<number>(`/content/${entity_id}/tags`, {
+      method: "PUT",
+      data: { tag_id },
+    });
+  }
+
+  async create_tag(title: string, colour: string) {
+    return this.client.fetch<Tag>(`/content/tags`, {
+      method: "POST",
+      data: { title, colour },
+    });
+  }
+
+  async delete_tag(tag_id: string) {
+    return this.client.fetch<number>(`/content/tags/${tag_id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async query_tags(query: string) {
+    return this.client.fetch<Tag[]>(`/content/tags?query=${query}`, {
+      method: "GET",
+    });
+  }
+
+  async remove_tag_from_entity(entity_id: string, tag_id: string) {
+    return this.client.fetch<number>(`/content/${entity_id}/tags/${tag_id}`, {
+      method: "DELETE",
+    });
   }
 }

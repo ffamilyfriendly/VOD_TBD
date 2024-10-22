@@ -13,7 +13,6 @@ use argon2::{
 use rusqlite::Row;
 use serde::Serialize;
 
-
 // CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0)
 #[derive(Debug, Clone)]
 pub enum UserPermissions {

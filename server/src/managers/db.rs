@@ -16,7 +16,7 @@ pub fn ensure_tables() -> Result<(), rusqlite::Error> {
     con.execute("CREATE TABLE IF NOT EXISTS metadata (metadata_id UUID PRIMARY KEY REFERENCES entity(entity_id) ON DELETE CASCADE, title TEXT DEFAULT \"entity\", thumbnail TEXT, backdrop TEXT, description TEXT, ratings INTEGER, language TEXT, release_date DATE)", ())?;
     
     // tags
-    con.execute("CREATE TABLE IF NOT EXISTS tags (tag_id UUID PRIMARY KEY, title TEXT, colour TEXT)", ())?;
+    con.execute("CREATE TABLE IF NOT EXISTS tags (tag_id TEXT PRIMARY KEY, title TEXT, colour TEXT)", ())?;
     con.execute("CREATE TABLE IF NOT EXISTS tags_assoc (tag_id UUID REFERENCES tags(tag_id), entity_id UUID REFERENCES entity(entity_id), UNIQUE(tag_id, entity_id))", ())?;
 
     // Source / upload
