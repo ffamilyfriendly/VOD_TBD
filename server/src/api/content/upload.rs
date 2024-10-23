@@ -23,6 +23,12 @@ pub fn create_entity(token: ActiveToken, input: Json<NewEntity>) -> Result<Entit
     Ok(entity.into())
 }
 
+#[delete("/entity/<entity_id>")]
+pub fn delete_entity(token: ActiveToken, entity_id: &str) -> Result<usize> {
+    has_permission!(token, ManageContent);
+    Ok(content_manager::delete_entity(entity_id)?.into())
+}
+
 #[patch("/<id>/metadata", data = "<input>")]
 pub fn edit_metadata(token: ActiveToken, id: &str, input: Json<MetadataUpdate>) -> Result<usize> {
     has_permission!(token, ManageContent);

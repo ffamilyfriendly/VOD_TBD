@@ -28,9 +28,9 @@
 
 .modal {
   background-color: rgb(var(--color-surface-500));
+  outline: 1px solid rgb(var(--color-surface-50) / 0.1);
   padding: 1em;
   min-width: 500px;
-  min-height: 500px;
   border-radius: 0.5em;
 }
 

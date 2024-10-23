@@ -72,3 +72,27 @@
 .table tr:nth-child(even) {
   background-color: rgb(var(--color-surface-500) / 0.4);
 }
+
+.flex {
+  display: flex;
+}
+
+.justify_right {
+  justify-content: right;
+}
+
+.justify_left {
+  justify-content: left;
+}
+
+.justify_space_between {
+  justify-content: space-between;
+}
+
+.justify_space_evenly {
+  justify-content: space-evenly;
+}
+
+.flex_direction_col {
+  flex-direction: column;
+}

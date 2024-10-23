@@ -17,7 +17,7 @@ pub fn ensure_tables() -> Result<(), rusqlite::Error> {
     
     // tags
     con.execute("CREATE TABLE IF NOT EXISTS tags (tag_id TEXT PRIMARY KEY, title TEXT, colour TEXT)", ())?;
-    con.execute("CREATE TABLE IF NOT EXISTS tags_assoc (tag_id UUID REFERENCES tags(tag_id), entity_id UUID REFERENCES entity(entity_id), UNIQUE(tag_id, entity_id))", ())?;
+    con.execute("CREATE TABLE IF NOT EXISTS tags_assoc (tag_id UUID REFERENCES tags(tag_id) ON DELETE CASCADE, entity_id UUID REFERENCES entity(entity_id) ON DELETE CASCADE, UNIQUE(tag_id, entity_id))", ())?;
 
     // Source / upload
     con.execute("CREATE TABLE IF NOT EXISTS sources (source_id UUID PRIMARY KEY, url TEXT, type TEXT, priority INTEGER DEFAULT 1, size INTEGER, parent TEXT NOT NULL REFERENCES entity(entity_id) ON DELETE CASCADE, uploaded_by INTEGER NOT NULL, video_codec TEXT, audio_codec TEXT, FOREIGN KEY(uploaded_by) REFERENCES users(id))", ())?;

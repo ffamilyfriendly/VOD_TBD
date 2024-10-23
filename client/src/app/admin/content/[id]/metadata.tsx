@@ -14,18 +14,16 @@ import Button, { SubmitButton } from "@/components/button";
 import { Center, STYLE, styles } from "@/components/common";
 import cs from "@/styles/common.module.css";
 import { Collection } from "@/lib/content";
+import { CollectionContext } from "./page";
 
 interface I_MetaData {
   id: string;
   data?: Collection;
 }
 
-function Preview(props: {}) {
-  return <div></div>;
-}
-
 export default function MetaData(props: I_MetaData) {
   const client = useContext(ClientContext);
+  const { item, set_item } = useContext(CollectionContext)!;
 
   const [title, set_title] = useState<string>();
   const [thumbnail, set_thumbnail] = useState<string>();
@@ -48,6 +46,30 @@ export default function MetaData(props: I_MetaData) {
     }
   }, [props.data]);
 
+  useEffect(() => {
+    set_item((collection) => {
+      const new_meta = {
+        ...collection.metadata,
+        title,
+        thumbnail,
+        backdrop,
+        description,
+        ratings: Number(ratings),
+        language,
+        release_date,
+      };
+      return { entity: collection.entity, metadata: new_meta };
+    });
+  }, [
+    title,
+    thumbnail,
+    backdrop,
+    description,
+    ratings,
+    language,
+    release_date,
+  ]);
+
   function handle_submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     client.content.update_metadata(props.id, {
@@ -62,7 +84,7 @@ export default function MetaData(props: I_MetaData) {
   }
 
   return (
-    <div>
+    <div className={Style.meta}>
       <Title>Metadata</Title>
       <form
         action={"/a"}
@@ -137,6 +159,9 @@ export default function MetaData(props: I_MetaData) {
           Update
         </SubmitButton>
       </form>
+      <Button theme="tetriary" wide={true}>
+        import from TMDB
+      </Button>
     </div>
   );
 }

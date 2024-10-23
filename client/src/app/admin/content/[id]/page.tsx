@@ -20,6 +20,10 @@ import { createContext } from "react";
 import { ContentsTable } from "../page";
 import Style from "./page.module.css";
 import { Tagging } from "./tagging";
+import Actions from "./actions";
+import Preview from "./preview";
+import { create_context_enviroment } from "@/lib/context";
+import { ToastContext } from "@/components/Toast";
 
 interface I_ContextType {
   sources: Source[];
@@ -58,7 +62,7 @@ function Sources(props: { id: string }) {
   }, [props.id, client.content, setSources]);
 
   return (
-    <div>
+    <div className={Style.sources_table}>
       {showModal ? <UploadModal parent={props.id} setModal={setModal} /> : null}
       <Title>Sources</Title>
       <Button on_click={() => setModal(true)} theme="primary">
@@ -97,7 +101,7 @@ function ChildrenTable(props: { data?: Collection }) {
   console.log(props.data);
 
   return (
-    <div>
+    <div className={Style.children_table}>
       <Title>{title}</Title>
       <ContentsTable
         entity_type={show_child_types}
@@ -107,7 +111,12 @@ function ChildrenTable(props: { data?: Collection }) {
   );
 }
 
+const { Enviroment, Context } = create_context_enviroment<Collection>();
+export const CollectionContext = Context;
+
 export default function Edit() {
+  const xd = useContext(ToastContext);
+
   const { id } = useParams();
   const [collection, set_collection] = useState<Collection>();
   const client = useContext(ClientContext);
@@ -128,18 +137,31 @@ export default function Edit() {
     collection?.entity.entity_type as unknown as string
   );
 
+  if (!collection) return <p>loading...</p>;
+
   return (
     <main className={Style.main}>
-      {" "}
-      <MetaData data={collection} id={id} />
-      <SourceProvider>
-        <Sources id={id} />
-      </SourceProvider>
-      {collection && <Tagging entity_id={collection?.entity.entity_id} />}
-      {entity_type !== EntityType.Movie &&
-        entity_type !== EntityType.SeriesEpisode && (
-          <ChildrenTable data={collection} />
-        )}
+      <Enviroment initial_value={collection}>
+        <MetaData data={collection} id={id} />
+        <SourceProvider>
+          <Sources id={id} />
+        </SourceProvider>
+        <Tagging entity_id={collection?.entity.entity_id} />
+        {entity_type !== EntityType.Movie &&
+          entity_type !== EntityType.SeriesEpisode && (
+            <ChildrenTable data={collection} />
+          )}
+        <Actions {...collection} />
+        <Preview />
+      </Enviroment>
+      <Button
+        theme="error"
+        on_click={() =>
+          xd?.add_toast({ title: "Fuuu" + "m".repeat(Math.random() * 20) })
+        }
+      >
+        Toast! :D
+      </Button>
     </main>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientProvider from "@/components/ClientProvider";
+import dynamic from "next/dynamic";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,6 +13,10 @@ export const metadata: Metadata = {
   icons: "/icon-192x192.png",
 };
 
+const ToastContainer = dynamic(() => import("@/components/Toast"), {
+  ssr: false,
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ClientProvider>{children}</ClientProvider>
+        <ToastContainer>
+          <ClientProvider>{children}</ClientProvider>
+        </ToastContainer>
       </body>
     </html>
   );

@@ -3,6 +3,11 @@
   border: 0;
   cursor: pointer;
   padding: 1em;
+  border-radius: 0.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
 }
 
 .wide {
@@ -19,11 +24,20 @@
   color: rgb(var(--on-secondary));
 }
 
+.warning {
+  background-color: rgb(var(--color-warning-500));
+  color: rgb(var(--on-warning));
+}
+
+.error {
+  background-color: rgb(var(--color-error-500));
+  color: rgb(var(--on-error));
+}
+
 .bordered {
   color: inherit;
   background-color: rgb(var(--color-surface-500));
   border: 1px solid rgb(var(--color-surface-50) / 0.1);
-  border-radius: 0.5em;
 }
 
 .tetriary {

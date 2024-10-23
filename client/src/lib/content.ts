@@ -161,6 +161,8 @@ export interface Entity {
   entity_id: string;
   parent?: string;
   entity_type: EntityType;
+  children: string;
+  added: Date;
 }
 
 export interface MetaData {
@@ -220,6 +222,12 @@ export default class Content {
     return this.client.fetch<Entity>("/content/entity", {
       method: "POST",
       data: { parent, entity_type },
+    });
+  }
+
+  async delete_entity(entity_id: string) {
+    return this.client.fetch<number>(`/content/entity/${entity_id}`, {
+      method: "DELETE",
     });
   }
 

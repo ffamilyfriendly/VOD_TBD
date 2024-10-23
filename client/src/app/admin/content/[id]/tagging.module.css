@@ -10,6 +10,8 @@
   overflow: hidden;
   transition: 0.3s;
   transition-timing-function: cubic-bezier(0.075, 0.82, 0.165, 1);
+
+  box-shadow: rgba(var(--tag_colour), 0.24) 0px 3px 8px;
 }
 
 .tag_remove_button {
@@ -39,4 +41,8 @@
   margin: 0;
   padding: 0;
   cursor: pointer;
+}
+
+.tagging {
+  grid-area: tags;
 }

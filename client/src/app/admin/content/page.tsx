@@ -8,11 +8,16 @@ import { Collection, EntityType } from "@/lib/content";
 import { useRouter } from "next/navigation";
 import { MdDeleteForever, MdOpenInFull } from "react-icons/md";
 import ContextMenu from "@/components/ContextMenu";
+import { create_context_enviroment, I_GenericContext } from "@/lib/context";
+
+const { Context, Enviroment } = create_context_enviroment<Collection[]>();
 
 function CollectionElement({ data }: { data: Collection }) {
   const [show_context, set_show_context] = useState(false);
+  const { item, set_item } = useContext(Context)!;
   const [pos, set_pos] = useState<{ top: number; left: number } | null>();
   const r = useRef<HTMLTableCellElement>(null);
+  const client = useContext(ClientContext);
 
   const router = useRouter();
 
@@ -21,10 +26,21 @@ function CollectionElement({ data }: { data: Collection }) {
       const position = r.current.getBoundingClientRect();
       set_pos({ top: position.top, left: position.left });
     }
-  }, [r]);
+  }, [r, item]);
 
   function delete_entity() {
-    alert("no");
+    client.content.delete_entity(data.entity.entity_id).then((res) => {
+      if (res.ok) {
+        set_item((elements) => {
+          const rv = elements.filter(
+            (el) => el.entity.entity_id != data.entity.entity_id
+          );
+          return rv;
+        });
+      } else {
+        // TODO: ERROR HANDLER
+      }
+    });
   }
 
   function view_entity() {
@@ -67,8 +83,19 @@ export function ContentsTable(props: {
   entity_type: EntityType;
   parent?: string;
 }) {
+  return (
+    <Enviroment initial_value={[]}>
+      <_ContentsTable {...props} />
+    </Enviroment>
+  );
+}
+
+export function _ContentsTable(props: {
+  entity_type: EntityType;
+  parent?: string;
+}) {
   const client = useContext(ClientContext);
-  const [collections, set_collections] = useState<Collection[]>();
+  const { item, set_item } = useContext(Context)!;
 
   useEffect(() => {
     client.content
@@ -77,7 +104,7 @@ export function ContentsTable(props: {
       })
       .then((res) => {
         if (res.ok) {
-          set_collections(res.value);
+          set_item(res.value);
         } else {
           console.error(res.error);
         }
@@ -91,7 +118,8 @@ export function ContentsTable(props: {
         <th>title</th>
         <th>options</th>
       </tr>
-      {collections?.map((s) => (
+
+      {item?.map((s) => (
         <CollectionElement key={s.entity.entity_id} data={s} />
       ))}
     </table>

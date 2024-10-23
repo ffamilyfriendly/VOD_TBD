@@ -46,7 +46,9 @@ pub struct Entity {
     pub entity_id: String,
     pub parent: Option<String>,
     pub entity_type: EntityType,
-    pub episode: Option<u16>
+    pub episode: Option<u16>,
+    pub children: u16,
+    pub added: String
 }
 
 pub fn create_entity(entity_type: EntityType, parent: Option<String>, order: Option<u16>) -> Result<Entity, Error> {
@@ -64,20 +66,30 @@ pub fn create_entity(entity_type: EntityType, parent: Option<String>, order: Opt
         entity_id: id.to_string(),
         parent: parent,
         entity_type: entity_type,
-        episode: order
+        episode: order,
+        added: "".to_owned(),
+        children: 0
     })
+}
+
+pub fn delete_entity(entity_id: &str) -> Result<usize, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("DELETE FROM entity WHERE entity_id = ?")?;
+    Ok(stmt.execute([entity_id])?)
 }
 
 pub fn get_entity(entity_id: &str) -> Result<Entity, Error> {
     let con = get_connection()?;
-    let mut stmt = con.prepare("SELECT * FROM entity WHERE entity_id = ?")?;
+    let mut stmt = con.prepare("SELECT *, (SELECT COUNT(*) FROM entity WHERE parent = e.entity_id) as children FROM entity as e WHERE e.entity_id = ?")?;
     let entity = stmt.query_row([entity_id], |row| {
         let num: u8 = row.get(2)?;
         Ok(Entity {
             entity_id: row.get(0)?,
             parent: row.get(1)?,
             entity_type: num.into(),
-            episode: row.get(3)?
+            episode: row.get(3)?,
+            added: row.get(4)?,
+            children: row.get(5)?
         }  
     )});
 
@@ -229,7 +241,7 @@ pub struct EntitySelectOptions {
 
 pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<Collection>, Error> {
     let con = get_connection()?;
-    let mut query = "SELECT * FROM entity AS e JOIN metadata AS m ON m.metadata_id = e.entity_id WHERE".to_owned();
+    let mut query = "SELECT *, (SELECT COUNT(*) FROM entity WHERE parent = e.entity_id) as children FROM entity AS e JOIN metadata AS m ON m.metadata_id = e.entity_id WHERE".to_owned();
     let mut params: Vec<&dyn ToSql> = vec![];
 
     if let Some(language) = &filter.language {
@@ -286,7 +298,9 @@ pub fn get_collections(parent: &str, filter: EntitySelectOptions) -> Result<Vec<
             entity_id: row.get(0)?,
             parent: row.get(1)?,
             entity_type: ent_type.into(),
-            episode: row.get(3)?
+            episode: row.get(3)?,
+            added: row.get(4)?,
+            children: row.get(13)?
         };
 
         let metadata = MetaData {

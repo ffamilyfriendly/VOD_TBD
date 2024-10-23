@@ -1,0 +1,38 @@
+.multi_buttons {
+  display: flex;
+  width: fit-content;
+  gap: 0.5em;
+}
+
+.button {
+  display: flex;
+  padding: 1em;
+  background-color: rgb(var(--color-surface-500));
+  border: 1px solid rgb(var(--color-surface-50) / 0.1);
+  color: inherit;
+  cursor: pointer;
+  border-radius: 0.5em;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.selected {
+  background-color: rgb(var(--color-primary-700));
+  box-shadow: rgb(var(--color-primary-500) / 0.3) 0px 3px 8px;
+}
+
+.button_container {
+  display: flex;
+}
+
+.left {
+  justify-content: center;
+}
+
+.center {
+  justify-content: center;
+}
+
+.right {
+  justify-content: right;
+}

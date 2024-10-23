@@ -179,7 +179,7 @@ export function Tagging(props: { entity_id: string }) {
   }
 
   return (
-    <div>
+    <div className={Style.tagging}>
       <Title>Tags</Title>
       <p>
         {" "}

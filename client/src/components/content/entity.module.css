@@ -1,0 +1,28 @@
+.entity {
+  display: flex;
+  gap: 0.5em;
+  max-height: 200px;
+  min-height: 150px;
+}
+
+.entity_image {
+  height: 100%;
+  max-height: inherit;
+  border-radius: 0.5em;
+}
+
+.small_img {
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+  aspect-ratio: 2/3;
+  min-height: inherit;
+  border-radius: 0.5em;
+  background-color: rgb(var(--color-surface-500));
+}
+
+.title_row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

@@ -154,7 +154,7 @@ export default function UploadModal(props: I_UploadModal) {
   }
 
   return (
-    <Modal setModal={props.setModal} title="Upload">
+    <Modal dismissable={true} setModal={props.setModal} title="Upload">
       {!file ? <UploadContainer setFile={setFile} /> : <Preview file={file} />}
       {file?.name}
       {progress && (

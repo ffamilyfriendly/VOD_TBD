@@ -35,13 +35,14 @@ export function Center({ children, inline, ...props }: I_Center) {
 }
 
 const bebas = Bebas_Neue({ weight: "400", subsets: ["latin-ext"] });
-export function Title(props: { children: String }) {
+export function Title(props: { children: ReactNode | ReactNode[] }) {
   return <h1 className={bebas.className}>{props.children}</h1>;
 }
 
 export function Modal(props: {
   children: ReactNode | ReactNode[];
   title: string;
+  dismissable: boolean;
   setModal: Dispatch<SetStateAction<boolean>>;
 }) {
   return (
@@ -49,13 +50,16 @@ export function Modal(props: {
       <div className={style.modal}>
         <div className={style.modal_header}>
           <Title>{props.title}</Title>
-          <Button
-            on_click={() => props.setModal(false)}
-            className={styles(STYLE.BORDER_RADIUS.md)}
-            theme="bordered"
-          >
-            Close
-          </Button>
+
+          {props.dismissable && (
+            <Button
+              on_click={() => props.setModal(false)}
+              className={styles(STYLE.BORDER_RADIUS.md)}
+              theme="tetriary"
+            >
+              Close
+            </Button>
+          )}
         </div>
         {props.children}
       </div>

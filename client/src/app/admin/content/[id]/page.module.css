@@ -1,3 +1,20 @@
 .main {
   display: grid;
+  grid-template-areas:
+    "meta preview actions"
+    "meta tags sources"
+    "meta whatever episodes";
+  gap: 1em;
+}
+
+.main > * {
+  justify-self: stretch;
+}
+
+.children_table {
+  grid-area: episodes;
+}
+
+.sources_table {
+  grid-area: sources;
 }
