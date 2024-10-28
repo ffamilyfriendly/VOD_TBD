@@ -10,6 +10,28 @@ export type Result<T, E = Error> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
+export function if_error<T>(res: Result<T>, handler?: (err: Result<never>) => unknown): Result<T> {
+  if(res.ok) return res
+  else {
+    handler?.(res)
+    return res
+  }
+}
+
+/**
+ * @description helper function to make result handling less ugly by taking care of error checking logic
+ * @param res the Result
+ * @param on_ok the function that is ran if result is ok
+ * @param on_err the function that is ran if result is err
+ */
+export function untangle_result<T>(res: Result<T>, on_ok?: (val: T) => unknown, on_err?: (val: Result<never>) => unknown) {
+  if(res.ok) {
+    on_ok?.(res.value)
+  } else {
+    on_err?.(res)
+  }
+}
+
 export function Unwrap<T>(res: Result<T>): T {
   if (res.ok) {
     return res.value;

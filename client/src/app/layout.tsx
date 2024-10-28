@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import ClientProvider from "@/components/ClientProvider";
 import dynamic from "next/dynamic";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -16,6 +15,8 @@ export const metadata: Metadata = {
 const ToastContainer = dynamic(() => import("@/components/Toast"), {
   ssr: false,
 });
+
+const ClientProvider = dynamic(() => import("@/components/ClientProvider"), { ssr: false })
 
 export default function RootLayout({
   children,

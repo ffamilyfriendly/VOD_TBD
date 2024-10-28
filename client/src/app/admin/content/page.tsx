@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { MdDeleteForever, MdOpenInFull } from "react-icons/md";
 import ContextMenu from "@/components/ContextMenu";
 import { create_context_enviroment, I_GenericContext } from "@/lib/context";
+import { ToastContext } from "@/components/Toast";
+import { if_error, untangle_result } from "@/lib/client";
 
 const { Context, Enviroment } = create_context_enviroment<Collection[]>();
 
@@ -18,6 +20,7 @@ function CollectionElement({ data }: { data: Collection }) {
   const [pos, set_pos] = useState<{ top: number; left: number } | null>();
   const r = useRef<HTMLTableCellElement>(null);
   const client = useContext(ClientContext);
+  const toast = useContext(ToastContext);
 
   const router = useRouter();
 
@@ -38,7 +41,7 @@ function CollectionElement({ data }: { data: Collection }) {
           return rv;
         });
       } else {
-        // TODO: ERROR HANDLER
+        toast?.from_error(res)
       }
     });
   }
@@ -96,6 +99,7 @@ export function _ContentsTable(props: {
 }) {
   const client = useContext(ClientContext);
   const { item, set_item } = useContext(Context)!;
+  const toast = useContext(ToastContext);
 
   useEffect(() => {
     client.content
@@ -106,7 +110,7 @@ export function _ContentsTable(props: {
         if (res.ok) {
           set_item(res.value);
         } else {
-          console.error(res.error);
+          toast?.from_error(res)
         }
       });
   }, [client.content, props.entity_type, props.parent]);
@@ -129,16 +133,16 @@ export function _ContentsTable(props: {
 export default function Content() {
   const client = useContext(ClientContext);
   const router = useRouter();
+  const toast = useContext(ToastContext);
   const [collections, set_collections] = useState<Collection[]>();
 
   async function createNewEntity() {
-    const res = await client.content.create_entity(EntityType.Movie);
+    const result = await client.content.create_entity(EntityType.Movie);
 
-    if (res.ok) {
-      router.push(`/admin/content/${res.value.entity_id}`);
-    } else {
-      alert(res.error);
-    }
+    untangle_result(result, 
+      (res) => {  router.push(`/admin/content/${res.entity_id}`) },
+      toast?.from_error
+    )
   }
 
   async function createFromId() {

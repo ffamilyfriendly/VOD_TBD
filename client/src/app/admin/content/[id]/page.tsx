@@ -24,6 +24,7 @@ import Actions from "./actions";
 import Preview from "./preview";
 import { create_context_enviroment } from "@/lib/context";
 import { ToastContext } from "@/components/Toast";
+import { FaFire } from "react-icons/fa6";
 
 interface I_ContextType {
   sources: Source[];
@@ -48,6 +49,7 @@ export function SourceProvider({
 
 function Sources(props: { id: string }) {
   const client = useContext(ClientContext);
+  const toast = useContext(ToastContext);
   const { sources, setSources } = useContext(SourceContext)!;
 
   const [showModal, setModal] = useState(false);
@@ -56,6 +58,8 @@ function Sources(props: { id: string }) {
     client.content.get_sources(props.id).then((src) => {
       if (src.ok) {
         setSources(src.value);
+      } else {
+        toast?.from_error(src)
       }
       console.log(src);
     });
@@ -126,6 +130,8 @@ export default function Edit() {
       client.content.get_collection(id).then((res) => {
         if (res.ok) {
           set_collection(res.value);
+        } else {
+          xd?.from_error(res)
         }
       });
     }
@@ -154,14 +160,6 @@ export default function Edit() {
         <Actions {...collection} />
         <Preview />
       </Enviroment>
-      <Button
-        theme="error"
-        on_click={() =>
-          xd?.add_toast({ title: "Fuuu" + "m".repeat(Math.random() * 20) })
-        }
-      >
-        Toast! :D
-      </Button>
     </main>
   );
 }

@@ -15,6 +15,8 @@ import { Center, STYLE, styles } from "@/components/common";
 import cs from "@/styles/common.module.css";
 import { Collection } from "@/lib/content";
 import { CollectionContext } from "./page";
+import { ToastContext } from "@/components/Toast";
+import { FaCheck } from "react-icons/fa6";
 
 interface I_MetaData {
   id: string;
@@ -23,6 +25,7 @@ interface I_MetaData {
 
 export default function MetaData(props: I_MetaData) {
   const client = useContext(ClientContext);
+  const toast = useContext(ToastContext);
   const { item, set_item } = useContext(CollectionContext)!;
 
   const [title, set_title] = useState<string>();
@@ -70,9 +73,9 @@ export default function MetaData(props: I_MetaData) {
     release_date,
   ]);
 
-  function handle_submit(e: FormEvent<HTMLFormElement>) {
+  async function handle_submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    client.content.update_metadata(props.id, {
+    const res = await client.content.update_metadata(props.id, {
       title,
       thumbnail,
       backdrop,
@@ -81,6 +84,12 @@ export default function MetaData(props: I_MetaData) {
       language,
       release_date,
     });
+
+    if(res.ok) {
+      toast?.add_toast({ title: "Updates saved!", theme: "surface", Icon: FaCheck })
+    } else {
+      toast?.from_error(res)
+    }
   }
 
   return (

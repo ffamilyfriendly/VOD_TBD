@@ -13,8 +13,6 @@ export default function RootLayout({
   const client = useContext(ClientContext);
   const pathname = usePathname();
   const router = useRouter();
-
-  // TODO: remove before prod
   const has_permissions = true || !!client.user;
 
   if (!has_permissions) {
