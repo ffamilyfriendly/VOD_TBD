@@ -24,7 +24,6 @@ import Actions from "./actions";
 import Preview from "./preview";
 import { create_context_enviroment } from "@/lib/context";
 import { ToastContext } from "@/components/Toast";
-import { FaFire } from "react-icons/fa6";
 
 interface I_ContextType {
   sources: Source[];

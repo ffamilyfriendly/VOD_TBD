@@ -1,5 +1,6 @@
-use std::future::Future;
+use std::{future::Future, string};
 
+use rocket::response::content;
 use serde::{Deserialize, Serialize};
 
 use crate::{datatypes::error::definition::Error, utils::config::load_config};
@@ -9,7 +10,7 @@ use super::{content_manager::{self, MetadataUpdate}, tag_manager};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MovieResult {
     adult: bool,
-    backdrop_path: String,
+    backdrop_path: Option<String>,
     genre_ids: Vec<u64>,
     id: u64,
     original_language: String,
@@ -43,7 +44,7 @@ pub async fn search_movie_metadata(query: &str) -> Result<Vec<MovieResult>, Erro
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SeriesResult {
     adult: bool,
-    backdrop_path: String,
+    backdrop_path: Option<String>,
     genre_ids: Vec<u64>,
     id: u64,
     origin_country: Vec<String>,
@@ -51,7 +52,7 @@ pub struct SeriesResult {
     original_name: String,
     overview: String,
     popularity: f64,
-    poster_path: String,
+    poster_path: Option<String>,
     first_air_date: String,
     name: String,
     vote_average: f64,
@@ -152,13 +153,8 @@ async fn create_series_season(season: &Season, series_id: &u64, parent: String) 
     Ok(())
 }
 
-pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
-    let entity = content_manager::create_entity(content_manager::EntityType::Series, None, None)?;
-    content_manager::create_empty_metadata(&entity.entity_id)?;
-
-    let series_meta = get_series_details(series_id).await?;
-
-    for genre in series_meta.genres {
+pub fn handle_tags(tags: Vec<Genre>, entity_id: &str) -> Result<(), Error> {
+    for genre in tags {
         let id_as_string = genre.id.to_string();
 
         // Try to fetch the genre as a tag if it already exists...
@@ -177,8 +173,18 @@ pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
         };
 
         // Apply the genre tag to the content
-        tag_manager::tag_content(&tag.tag_id, &entity.entity_id)?;
-    }
+        tag_manager::tag_content(&tag.tag_id, entity_id)?;
+    };
+    Ok(())
+}
+
+pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
+    let entity = content_manager::create_entity(content_manager::EntityType::Series, None, None)?;
+    content_manager::create_empty_metadata(&entity.entity_id)?;
+
+    let series_meta = get_series_details(series_id).await?;
+
+    handle_tags(series_meta.genres, &entity.entity_id)?;
 
     content_manager::update_metadata(&entity.entity_id, MetadataUpdate {
         backdrop: Some(format!("https://image.tmdb.org/t/p/w780{}", series_meta.backdrop_path)),
@@ -194,6 +200,41 @@ pub async fn create_series_from_tmdb_id(series_id: &u64) -> Result<(), Error> {
         println!("Creating season {} ({})", season.season_number, season.name);
         create_series_season(&season, &series_id, entity.entity_id.clone()).await?
     }
+
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ExtendedMovieResult {
+    pub adult: bool,
+    pub backdrop_path: Option<String>,
+    pub genres:  Vec<Genre>,
+    pub id: u64,
+    pub original_language: String,
+    pub original_title: String,
+    pub overview: String,
+    pub poster_path: String,
+    pub release_date: String,
+    pub title: String,
+    pub vote_average: f64
+}
+
+pub async fn get_movie_meta(movie_id: &u64) -> Result<ExtendedMovieResult, Error> {
+    let resp = get_authed_client(format!("https://api.themoviedb.org/3/movie/{}", movie_id)).await?.json::<ExtendedMovieResult>().await?;
+    Ok(resp)
+}
+
+pub async fn overwrite_movie_meta(entity_id: &str, movie_id: &u64) -> Result<(), Error> {
+    let meta = get_movie_meta(movie_id).await?;
+
+    let backdrop_img = match meta.backdrop_path {
+        Some(bd) => Some(format!("https://image.tmdb.org/t/p/w780{}", bd)),
+        None => None
+    };
+
+    content_manager::update_metadata(entity_id, MetadataUpdate { thumbnail: Some(format!("https://image.tmdb.org/t/p/w780{}",meta.poster_path)), backdrop: backdrop_img, description: Some(meta.overview), ratings: Some(meta.vote_average), language: Some(meta.original_language), release_date: Some(meta.release_date), title: Some(meta.title) })?;
+
+    handle_tags(meta.genres, entity_id)?;
 
     Ok(())
 }

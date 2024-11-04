@@ -36,6 +36,9 @@ pub enum ApiErrors {
     #[error("Token was provided but invalid")]
     Invalid,
 
+    #[error("Field `{0}` is required for this operation but missing from request")]
+    MissesField(String),
+
     // Content related errors
     #[error("Entity of that type cannot hold sources")]
     CantHoldSource,

@@ -11,6 +11,7 @@ import ContextMenu from "@/components/ContextMenu";
 import { create_context_enviroment, I_GenericContext } from "@/lib/context";
 import { ToastContext } from "@/components/Toast";
 import { if_error, untangle_result } from "@/lib/client";
+import TmdbSearchBox from "./[id]/tmdb";
 
 const { Context, Enviroment } = create_context_enviroment<Collection[]>();
 
@@ -134,7 +135,7 @@ export default function Content() {
   const client = useContext(ClientContext);
   const router = useRouter();
   const toast = useContext(ToastContext);
-  const [collections, set_collections] = useState<Collection[]>();
+  const [show_tmdb, set_show_tmdb] = useState(false)
 
   async function createNewEntity() {
     const result = await client.content.create_entity(EntityType.Movie);
@@ -145,29 +146,20 @@ export default function Content() {
     )
   }
 
-  async function createFromId() {
-    const res = await client.content.create_series_from_id(1396);
-
-    if (res.ok) {
-      console.log("OK");
-    } else {
-      console.error(res.error);
-    }
-  }
-
   return (
     <main>
+      <Title>Filmer</Title>
       <Button on_click={createNewEntity} theme="primary">
         New
       </Button>
-      <Title>Filmer</Title>
       <ContentsTable entity_type={EntityType.Movie} />
-
-      <Button on_click={createFromId} theme="primary">
-        New
-      </Button>
+      
       <Title>Series</Title>
+      <Button on_click={() => set_show_tmdb(true)} theme="bordered">
+        Import from TMDB
+      </Button>
       <ContentsTable entity_type={EntityType.Series} />
+      {show_tmdb && <TmdbSearchBox type={EntityType.Series} set_state={set_show_tmdb} />}
     </main>
   );
 }

@@ -40,25 +40,28 @@ export function MultiButtons({ buttons }: I_MultiButtons) {
 interface I_MultiView {
   pages: I_MultiViewPage[];
   position: "left" | "center" | "right";
+  bottom?: boolean
 }
 
 export function MultiView({ pages, ...props }: I_MultiView) {
   const [page, set_page] = useState(0);
+
+  const button_element = <div className={styles(Style.button_container, Style[props.position])}> <MultiButtons
+    buttons={pages.map((p, i) => {
+      return {
+        title: p.title,
+        icon: p.icon,
+        selected: i == page,
+        on_click: () => set_page(i),
+      };
+    })}
+  /> </div>
+
   return (
     <div className={Style.multiview}>
-      <div className={styles(Style.button_container, Style[props.position])}>
-        <MultiButtons
-          buttons={pages.map((p, i) => {
-            return {
-              title: p.title,
-              icon: p.icon,
-              selected: i == page,
-              on_click: () => set_page(i),
-            };
-          })}
-        />
-      </div>
+      {!props.bottom && button_element}      
       <div>{pages[page].page}</div>
+      {props.bottom && button_element}      
     </div>
   );
 }

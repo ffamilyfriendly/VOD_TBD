@@ -157,12 +157,52 @@ export function to_entitytype(x: string): EntityType {
   }
 }
 
+export interface TmdbMovieResult {
+  adult: boolean,
+  backdrop_path: string,
+  genre_ids: number[],
+  id: number,
+  original_language: string,
+  original_title: string,
+  overview: string,
+  popularity: number,
+  poster_path: string,
+  release_date: string,
+  title: string,
+  video: boolean,
+  vote_average: number,
+  vote_count: number
+}
+
+export interface TmdbSeriesResult {
+  adult: boolean,
+  backdrop_path: string,
+  id: number,
+  name: string,
+  original_language: string,
+  original_name: string,
+  poster_path: string,
+  overview: string,
+  vote_average: number,
+  last_air_date: string
+}
+
 export interface Entity {
   entity_id: string;
   parent?: string;
   entity_type: EntityType;
   children: string;
   added: Date;
+}
+
+export function gen_fake_entity(entity_type: EntityType): Entity {
+  return {
+    entity_id: "TEST",
+    parent: "TEST",
+    entity_type: entity_type,
+    children: "",
+    added: new Date()
+  }
 }
 
 export interface MetaData {
@@ -212,10 +252,17 @@ export default class Content {
   }
 
   async create_series_from_id(tmdb_id: number) {
-    return this.client.fetch<string>("/content/series/import", {
+    return this.client.fetch<string>("/tmdb/series/import", {
       method: "POST",
       data: { tmdb_id: tmdb_id },
     });
+  }
+
+  async overwrite_movie_meta_from_id(entity_id: string, tmdb_id: number) {
+    return this.client.fetch<string>(`/tmdb/movie/${entity_id}/import`, {
+      method: "POST",
+      data: { tmdb_id: tmdb_id }
+    })
   }
 
   async create_entity(entity_type: EntityType, parent?: string) {
@@ -327,5 +374,17 @@ export default class Content {
     return this.client.fetch<number>(`/content/${entity_id}/tags/${tag_id}`, {
       method: "DELETE",
     });
+  }
+
+  async search_tmdb_movie(query: string) {
+    return this.client.fetch<TmdbMovieResult[]>(`/tmdb/movies/search?query=${query}`, {
+      method: "GET"
+    })
+  }
+
+  async search_tmdb_series(query: string) {
+    return this.client.fetch<TmdbSeriesResult[]>(`/tmdb/series/search?query=${query}`, {
+      method: "GET"
+    })
   }
 }

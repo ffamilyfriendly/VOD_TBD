@@ -43,3 +43,7 @@
 .tetriary {
   color: inherit;
 }
+
+.disabled {
+  opacity: .5;
+}

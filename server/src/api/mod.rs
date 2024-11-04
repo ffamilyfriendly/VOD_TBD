@@ -24,5 +24,10 @@ pub fn routes() -> Vec<RouteHelper> {
         routes: content::routes()
     };
 
-    vec![user, invite, content]
+    let tmdb = RouteHelper {
+        base: "/tmdb".to_owned(),
+        routes: content::tmdb_routes()
+    };
+
+    vec![user, invite, content, tmdb]
 }

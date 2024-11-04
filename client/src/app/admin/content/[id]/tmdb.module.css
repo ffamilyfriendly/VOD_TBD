@@ -1,0 +1,14 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    max-height: 50vh;
+    max-width: 500px;
+    overflow: scroll;
+    gap: .5em;
+}
+
+.selected {
+    border-left: 2px solid green;
+    background-color: rgba(0, 128, 0, 0.164);
+    padding-left: .5em;
+}

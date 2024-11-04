@@ -13,10 +13,11 @@ import {
 import Button, { SubmitButton } from "@/components/button";
 import { Center, STYLE, styles } from "@/components/common";
 import cs from "@/styles/common.module.css";
-import { Collection } from "@/lib/content";
+import { Collection, EntityType } from "@/lib/content";
 import { CollectionContext } from "./page";
 import { ToastContext } from "@/components/Toast";
 import { FaCheck } from "react-icons/fa6";
+import TmdbSearchBox from "./tmdb";
 
 interface I_MetaData {
   id: string;
@@ -35,6 +36,8 @@ export default function MetaData(props: I_MetaData) {
   const [ratings, set_ratings] = useState<string>();
   const [language, set_language] = useState<string>();
   const [release_date, set_release_date] = useState<string>();
+
+  const [show_import, set_show_import] = useState(false)
 
   useEffect(() => {
     if (props.data) {
@@ -168,9 +171,10 @@ export default function MetaData(props: I_MetaData) {
           Update
         </SubmitButton>
       </form>
-      <Button theme="tetriary" wide={true}>
+      <Button on_click={() => set_show_import(true)} theme="tetriary" wide={true}>
         import from TMDB
       </Button>
+      { show_import && <TmdbSearchBox set_state={set_show_import} type={EntityType.Movie} entity_id={props.id} /> }
     </div>
   );
 }

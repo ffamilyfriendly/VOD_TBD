@@ -69,7 +69,7 @@ function ExpandedEntity({ metadata, entity, ...props }: I_Entity) {
           )}
         </div>
 
-        <p>{metadata.description}</p>
+        <p className={Style.description}>{metadata.description}</p>
       </div>
     </div>
   );

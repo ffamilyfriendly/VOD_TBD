@@ -35,6 +35,7 @@ interface I_Button extends I_Common {
   wide?: boolean;
   href?: string;
   confirm?: boolean;
+  disabled?: boolean
   icon?: IconType;
 }
 export default function Button({ children, ...props }: I_Button) {
@@ -60,8 +61,10 @@ export default function Button({ children, ...props }: I_Button) {
           style.button,
           props.className,
           style[props.theme],
-          props.wide ? style.wide : ""
+          props.wide ? style.wide : "",
+          props.disabled ? style.disabled : ""
         )}
+        disabled={props.disabled}
         onClick={middleware}
       >
         {props.icon && <props.icon />}

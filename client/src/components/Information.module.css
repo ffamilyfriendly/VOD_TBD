@@ -25,6 +25,13 @@
   box-shadow: inset 0px 0px 0px 1px rgb(var(--color-error-50) / 0.1);
 }
 
+.warning {
+  color: rgb(var(--color-warning-50));
+  background-color: rgba(var(--color-warning-500) / 0.5);
+  box-shadow: inset 0px 0px 0px 1px rgb(var(--color-warning-50) / 0.1);
+}
+
+
 .bordered {
   background-color: transparent;
   outline: 0;

@@ -10,7 +10,7 @@ use argon2::{
     },
     Argon2
 };
-use rusqlite::Row;
+use rusqlite::{Row, ToSql};
 use serde::Serialize;
 
 // CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0)
@@ -96,6 +96,23 @@ pub fn get_user(user_email: &str) -> Result<User, Error> {
      }
 }
 
+pub fn get_user_by_id(user_id: &u16) -> Result<User, Error> {
+    let db = db::get_connection()?;
+
+    let mut stmt = db.prepare("SELECT * FROM users WHERE id = ?")?;
+    match stmt.query_row([user_id], |row: &Row<'_>| { 
+        Ok(User::try_from(row)?)
+     }) {
+        Ok(d) => Ok(d),
+        Err(e) => {
+            if e == rusqlite::Error::QueryReturnedNoRows {
+                return Err(UserManagerErrors::NotFound(user_id.to_string()).into())
+            }
+            Err(e.into())
+        }
+     }
+}
+
 /// Takes a plaintext password and returns a hashed password. Poof 🪄
 pub fn hash_password(password: &str) -> Result<String, argon2::Error> {
     let salt = SaltString::generate(&mut OsRng);
@@ -148,6 +165,43 @@ pub fn delete_user(id: u16) -> Result<usize, Error> {
         Ok(size) => Ok(size),
         Err(e) => Err(e.into())
     }
+}
+
+pub struct UserUpdate {
+    pub password: Option<String>,
+    pub email: Option<String>,
+    pub flags: Option<u8>
+}
+
+
+// (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password TEXT NOT NULL, flags INTEGER NOT NULL DEFAULT 0, invite_used TEXT NOT NULL
+pub fn update_user(id: &u16, update: UserUpdate) -> Result<usize, Error> {
+    let con = db::get_connection()?;
+    let mut query = "UPDATE users SET ".to_owned();
+    let mut params: Vec<&dyn ToSql> = vec![];
+
+    if let Some(password) = &update.password {
+        query += "password = ?,";
+        params.push(password);
+    }
+
+    if let Some(email) = &update.email {
+        query += "email = ?,";
+        params.push(email);
+    }
+
+    if let Some(flags) = &update.flags {
+        query += "flags = ?,";
+        params.push(flags);
+    }
+
+    query.pop();
+
+    query += "WHERE id = ?";
+    params.push(&id);
+
+    let mut stmt = con.prepare(&query)?;
+    Ok(stmt.execute(rusqlite::params_from_iter(params))?)   
 }
 
 #[cfg(test)]
