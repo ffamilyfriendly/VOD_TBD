@@ -3,6 +3,7 @@ import Content from "./content";
 import { I_HttpOptions, t_http_get } from "./http";
 import Invites from "./invites";
 import { logger } from "./logger";
+import UserManager from "./users";
 
 export const API_PATH = "http://127.0.0.1:8000";
 
@@ -114,6 +115,7 @@ export default class Client {
   _refreshToken?: string;
   content: Content;
   invites: Invites;
+  users: UserManager
 
   set refreshToken(val: string) {
     this.logger.log(`refreshToken set.`);
@@ -132,6 +134,7 @@ export default class Client {
   constructor() {
     this.content = new Content(this);
     this.invites = new Invites(this);
+    this.users = new UserManager(this)
     const saved_token = localStorage.getItem("VOD_TOKEN");
 
     if (saved_token) {

@@ -2,16 +2,18 @@
   height: 100vh;
   display: flex;
   padding: 1em;
+  gap: 2em;
 }
 
 .navbar {
   display: flex;
   flex-direction: column;
-  background-color: rgb(var(--color-surface-500));
-  color: rgb(var(--color-surface-50));
   height: 100%;
   padding: 1em;
-  border-radius: 0.5em;
+  width: 25%;
+  max-width: 300px;
+  border-right: 1px solid rgb(var(--color-surface-50) / .5);
+  gap: .3em;
 }
 
 .navbar a {
@@ -22,4 +24,20 @@
 
 .container {
   padding: 1em;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 2em;
+}
+
+.subtitle {
+  color: rgb(var(--color-surface-50) / .5);
+}
+
+.logo_image {
+  height: 3em;
+  width: auto;
 }

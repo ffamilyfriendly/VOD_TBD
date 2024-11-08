@@ -9,9 +9,14 @@ pub struct RouteHelper {
 }
 
 pub fn routes() -> Vec<RouteHelper> {
-    let user = RouteHelper {
+    let auth = RouteHelper {
         base: "/auth/".to_owned(),
         routes: user::routes()
+    };
+
+    let user = RouteHelper {
+        base: "/user/".to_owned(),
+        routes: user::manage_users_routes()
     };
 
     let invite = RouteHelper {
@@ -29,5 +34,5 @@ pub fn routes() -> Vec<RouteHelper> {
         routes: content::tmdb_routes()
     };
 
-    vec![user, invite, content, tmdb]
+    vec![auth, user, invite, content, tmdb]
 }

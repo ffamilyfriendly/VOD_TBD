@@ -6,7 +6,7 @@ use crate::utils::jwt::ActiveToken;
 use crate::datatypes::error::definition::{ApiErrors, Result};
 
 
-#[get("/users")]
+#[get("/all")]
 pub fn get_all_users(token: ActiveToken) -> Result<Vec<User>> {
     has_permission!(token, ManageUsers);
     Ok(user_manager::get_users()?.into())
@@ -20,7 +20,7 @@ pub struct PasswordUpdate {
     pub new_password: String
 }
 
-#[patch("/user/<id>/password", data = "<data>")]
+#[patch("/<id>/password", data = "<data>")]
 pub fn update_password(token: ActiveToken, id: u16, data: Json<PasswordUpdate>) -> Result<usize> {
     if id != token.uid && !token.get_perms().has(&user_manager::UserPermissions::ManageUsers) {
         return Err(ApiErrors::MissesPermission(user_manager::UserPermissions::ManageUsers).into())
@@ -49,7 +49,7 @@ pub struct FlagUpdate {
     pub email: Option<String>
 }
 
-#[patch("/user/<id>/flag", data = "<data>")]
+#[patch("/<id>", data = "<data>")]
 pub fn update_user(token: ActiveToken, data: Json<FlagUpdate>, id: u16) -> Result<usize> {
     let flags = match data.flag {
         Some(f) => {

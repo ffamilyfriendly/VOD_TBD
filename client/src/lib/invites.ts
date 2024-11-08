@@ -1,6 +1,11 @@
 import Client from "./client";
 
-interface I_Invite {}
+interface I_Invite {
+  id: string,
+  uses: number,
+  expires: Date,
+  creator_uid?: number
+}
 
 export default class Invites {
   client: Client;
