@@ -1,6 +1,6 @@
 import Client from "./client";
 
-interface I_User {
+export interface I_User {
   id: number,
   email: string,
   name: string,
