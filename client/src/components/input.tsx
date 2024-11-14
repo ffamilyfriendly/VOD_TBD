@@ -21,6 +21,7 @@ interface I_InputOptions extends I_Common {
   pattern?: string;
   required?: boolean;
   set_state?: Dispatch<SetStateAction<any>>;
+  transform_value?: (value: string) => string
 }
 
 export default function Input({
@@ -30,6 +31,7 @@ export default function Input({
   colour = "surface",
   ...props
 }: I_InputOptions) {
+
   function handle_change(e: ChangeEvent<HTMLInputElement>) {
     if (props.initial && !props.set_state) {
       console.warn(
@@ -38,7 +40,8 @@ export default function Input({
     }
 
     if (props.set_state) {
-      props.set_state(e.target.value);
+      const value = props.transform_value ? props.transform_value(e.target.value) : e.target.value
+      props.set_state(value);
     }
   }
 

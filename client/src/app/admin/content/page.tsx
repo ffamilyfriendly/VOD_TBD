@@ -118,15 +118,19 @@ export function _ContentsTable(props: {
 
   return (
     <table className={common.table}>
+      <thead>
       <tr>
         <th>id</th>
         <th>title</th>
         <th>options</th>
       </tr>
+      </thead>
 
+      <tbody>
       {item?.map((s) => (
         <CollectionElement key={s.entity.entity_id} data={s} />
       ))}
+      </tbody>
     </table>
   );
 }

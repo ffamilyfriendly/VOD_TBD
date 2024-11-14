@@ -1,3 +1,4 @@
+use rocket::http::ext::IntoCollection;
 use rusqlite::{named_params, types::Null};
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +12,8 @@ pub struct Invite {
     pub id: String,
     pub uses: u16,
     pub expires: u64,
-    pub creator_uid: Option<u16>
+    pub creator_uid: Option<u16>,
+    pub creator_username: Option<String>
 }
 
 impl Invite {
@@ -59,7 +61,8 @@ pub fn create_invite(id: &str, expires: u64, uses: u16, creator: Option<u16>) ->
         id: id.to_string(),
         expires,
         uses,
-        creator_uid: creator
+        creator_uid: creator,
+        creator_username: None
     })
 }
 
@@ -77,7 +80,7 @@ pub fn subtract_from_invite(id: &str) -> Result<usize, Error> {
 
 pub fn get_invite(id: &str) -> Result<Invite, Error> {
     let con = get_connection()?;
-    let mut stmt = con.prepare("SELECT * FROM invites WHERE id = ?")?;
+    let mut stmt = con.prepare("SELECT *, (SELECT name FROM users WHERE id = invites.creator_uid) AS creator_username FROM invites WHERE id = ?")?;
     
     match stmt.query_row([id], |f| { 
         Ok(Invite { 
@@ -85,6 +88,7 @@ pub fn get_invite(id: &str) -> Result<Invite, Error> {
             uses:      f.get(1)?,
             expires:       f.get(2)?,
             creator_uid:   f.get(3)?,
+            creator_username: f.get(4)?
          })
      }) {
         Ok(d) => Ok(d),
@@ -95,6 +99,22 @@ pub fn get_invite(id: &str) -> Result<Invite, Error> {
             Err(e.into())
         }
      }
+}
+
+pub fn get_all_invites() -> Result<Vec<Invite>, Error> {
+    let con = get_connection()?;
+    let mut stmt = con.prepare("SELECT *, (SELECT name FROM users WHERE id = invites.creator_uid) AS creator_username FROM invites")?;
+    let res = stmt.query_map([], |row| {
+        Ok(Invite {
+            id: row.get(0)?,
+            uses: row.get(1)?,
+            expires: row.get(2)?,
+            creator_uid: row.get(3)?,
+            creator_username: row.get(4)?
+        })
+    })?.filter(|row| row.is_ok()).map(|row| row.unwrap()).collect();
+    
+    Ok(res)
 }
 
 pub fn delete_invite(id: &str) -> Result<usize, Error> {
