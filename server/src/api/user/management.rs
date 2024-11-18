@@ -20,6 +20,13 @@ pub struct PasswordUpdate {
     pub new_password: String
 }
 
+#[get("/<id>")]
+pub fn get_selected_user(token: ActiveToken, id: u16) -> Result<User> {
+    has_permission!(token, ManageUsers);
+
+    Ok(user_manager::get_user_by_id(&id)?.into())
+}
+
 #[patch("/<id>/password", data = "<data>")]
 pub fn update_password(token: ActiveToken, id: u16, data: Json<PasswordUpdate>) -> Result<usize> {
     if id != token.uid && !token.get_perms().has(&user_manager::UserPermissions::ManageUsers) {

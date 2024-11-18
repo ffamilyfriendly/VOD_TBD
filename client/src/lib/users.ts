@@ -31,6 +31,12 @@ export default class UserManager {
     })
   }
 
+  async get_user(id: number) {
+    return this.client.fetch<I_User>(`/user/${id}`, {
+      method: "GET"
+    })
+  }
+
   async update_user(id: number, update: I_UserUpdate) {
     return this.client.fetch<number>(`/user/${id}`, {
         method: "PATCH",

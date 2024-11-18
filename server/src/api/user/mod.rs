@@ -10,6 +10,6 @@ pub fn routes() -> Vec<Route>  {
 
 pub fn manage_users_routes() -> Vec<Route> {
     routes![
-        management::get_all_users, management::update_password, management::update_user
+        management::get_all_users, management::update_password, management::update_user, management::get_selected_user
     ]
 }
